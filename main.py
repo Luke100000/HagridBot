@@ -5,7 +5,7 @@ import discord
 from dotenv import load_dotenv
 
 from config import retrieve
-from grumpy import grumpy
+from hagrid import hagrid
 from sirben import SIRBEN_VERSES
 
 load_dotenv()
@@ -50,7 +50,7 @@ async def on_message(message):
         )
 
     elif "hey hagrid" in msg:
-        await message.channel.send(grumpy(msg))
+        await message.channel.send(hagrid(msg))
 
 
 client.run(TOKEN)
