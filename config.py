@@ -58,7 +58,7 @@ def retrieve(query):
             )
 
     if len(results) == 0:
-        return "Didn't find anything."
+        return "Didn't find anythin'."
 
     results = sorted(results, key=lambda v: v[0], reverse=True)
 
@@ -67,5 +67,5 @@ def retrieve(query):
     return "\n".join([r[1] for r in results][:max_prints]) + (
         ""
         if len(results) <= max_prints
-        else f"\nAnd {len(results) - max_prints} more."
+        else f"\nAn {len(results) - max_prints} more."
     )

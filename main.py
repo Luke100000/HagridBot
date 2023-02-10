@@ -46,7 +46,7 @@ async def on_message(message):
 
     elif "hagrid" in msg and "log" in msg:
         await message.channel.send(
-            f"Drop the `latest.log` here. It's in your Minecraft's save directory in `logs`. If your are on a server, drop that log too. The crashlog does not always contain enough information. If you want to make sure to not get ignored, make a GitHub issue. And if you do not follow the template I will break you kneecap."
+            f"Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
         )
 
     elif msg.startswith("hey hagrid"):
