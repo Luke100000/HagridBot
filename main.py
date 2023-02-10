@@ -36,7 +36,7 @@ async def on_message(message):
             f"The Book of the Sirbens, chapter {verse % 30 + 1}, verse {verse % 17 + 1}:\n> {SIRBEN_VERSES[verse]}"
         )
 
-    elif "hagrid" in msg and "config" in msg:
+    elif "hagrid config" in msg:
         await message.channel.send(retrieve(msg.replace("config", "")))
 
     elif "polygamy" in msg:
@@ -44,12 +44,12 @@ async def on_message(message):
             f"Polygamy deconfirmed part {random.randrange(1000) + 50}"
         )
 
-    elif "hagrid" in msg and "log" in msg:
+    elif "hagrid log" in msg:
         await message.channel.send(
             f"Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
         )
 
-    elif msg.startswith("hey hagrid"):
+    elif "hey hagrid" in msg:
         await message.channel.send(grumpy(msg))
 
 

@@ -62,7 +62,7 @@ def retrieve(query):
 
     results = sorted(results, key=lambda v: v[0], reverse=True)
 
-    max_prints = 3
+    max_prints = 5
 
     return "\n".join([r[1] for r in results][:max_prints]) + (
         ""
