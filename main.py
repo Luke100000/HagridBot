@@ -44,9 +44,17 @@ async def on_message(message):
             f"Polygamy deconfirmed part {random.randrange(1000) + 50}"
         )
 
+    elif "league of legends" in msg:
+        await message.channel.send(f"Blimey, take a gander at this fella... We should ban 'im, we should.")
+
     elif "hagrid log" in msg:
         await message.channel.send(
             f"Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
+        )
+
+    elif "hagrid skins" in msg:
+        await message.channel.send(
+            f"Oi! Take a gander at this 'ere: https://github.com/Luke100000/minecraft-comes-alive/wiki/Custom-Skins"
         )
 
     elif "hey hagrid" in msg:
