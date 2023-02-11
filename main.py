@@ -44,7 +44,7 @@ async def on_message(message):
             f"Polygamy deconfirmed part {random.randrange(1000) + 50}"
         )
 
-    elif "league of legends" in msg:
+    elif "league" in msg:
         await message.channel.send(f"Blimey, take a gander at this fella... We should ban 'im, we should.")
 
     elif "hagrid log" in msg:
