@@ -100,6 +100,7 @@ async def on_message(message):
 
     elif "hey hagrid" in msg:
         stat(message, "hey hagrid")
+        await message.channel.typing()
         await message.channel.send(hagrid(msg))
 
 
