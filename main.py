@@ -68,7 +68,7 @@ async def on_message(message):
         )
 
     elif "league" in msg:
-        stat(message, "leage")
+        stat(message, "league")
         await message.channel.send(
             f"Blimey, take a gander at this fella... We should ban 'im, we should."
         )
