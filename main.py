@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from config import retrieve
 from hagrid import hagrid
+from library import library
 from sirben import SIRBEN_VERSES
 
 import shelve
@@ -97,6 +98,11 @@ async def on_message(message):
         lines.append("```")
 
         await message.channel.send("\n".join(lines))
+
+    elif "hagrid skin library" in msg:
+        l = library()
+
+        await message.channel.send(l)
 
     elif "hey hagrid" in msg:
         stat(message, "hey hagrid")
