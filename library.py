@@ -14,7 +14,7 @@ def library():
 
     most_likes = sorted(response, key=lambda v: v["likes_received"], reverse=True)[:3]
     most_submissions = sorted(
-        response, key=lambda v: len(v["submissions"]), reverse=True
+        response, key=lambda v: v["submission_count"], reverse=True
     )[:3]
 
     return "\n".join(
@@ -26,9 +26,9 @@ def library():
             f"3. {escape_markdown(most_likes[2]['username'])} with {most_likes[2]['likes_received']} likes",
             "```",
             "```md",
-            f"1. {escape_markdown(most_submissions[0]['username'])} with {len(most_submissions[0]['submissions'])} submissions",
-            f"2. {escape_markdown(most_submissions[1]['username'])} with {len(most_submissions[1]['submissions'])} submissions",
-            f"3. {escape_markdown(most_submissions[2]['username'])} with {len(most_submissions[2]['submissions'])} submissions",
+            f"1. {escape_markdown(most_submissions[0]['username'])} with {most_submissions[0]['submission_count']} submissions",
+            f"2. {escape_markdown(most_submissions[1]['username'])} with {most_submissions[1]['submission_count']} submissions",
+            f"3. {escape_markdown(most_submissions[2]['username'])} with {most_submissions[2]['submission_count']} submissions",
             "```",
         ]
     )
