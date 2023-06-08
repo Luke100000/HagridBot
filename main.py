@@ -68,6 +68,12 @@ async def on_message(message):
             f"Polygamy deconfirmed part {random.randrange(1000) + 50}"
         )
 
+    elif "port" in msg and "1.12" in msg:
+        stat(message, "1.12")
+        await message.channel.send(
+            f"Ah, blimey! This MCA 1.12.2 port, it's a right headache, I'm tellin' ya! All them technical tweaks and compatibility fuss, it's a right bunch of unnecessary work, ain't it?"
+        )
+
     elif "league" in msg:
         stat(message, "league")
         await message.channel.send(
