@@ -10,3 +10,15 @@ And don't even get me started on the technical side of things! It's like tryin' 
 I'm all for a bit of magical experimentation, but some things just shouldn't be tampered with, and mixin' Java and Bedrock is one of 'em! It's like tryin' to teach a Thestral how to dance the tango – it's just not meant to be!
 
 So, let's keep things as they are, shall we? Let Java be Java, and Bedrock be Bedrock, and let's not go mixin' potions that could explode in our faces! Stick to the magic you know, and let's enjoy each version for what it is – a magical adventure in its own right!"""
+
+
+HAGRID_COMMANDS = """"Usage:
+`/hagrid guild extend` - Allow collecting public user data
+`/hagrid channel index` - Index this channel for search
+`/hagrid channel noindex` - Remove this channel from index
+
+I also listen to non slash commands:
+`hagrid search` and lookup either the referenced message or your query.
+`hagrid who is @user` to describe a user
+`hagrid what happened` to summarize the last few days
+"""

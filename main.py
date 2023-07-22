@@ -23,7 +23,9 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 
-stats = shelve.open("stats")
+os.makedirs("shelve/", exist_ok=True)
+
+stats = shelve.open("shelve/stats")
 
 
 def stat(message, typ):
@@ -117,9 +119,7 @@ async def on_message(message):
         await message.channel.send("\n".join(lines))
 
     elif "hagrid skin library" in msg:
-        l = library()
-
-        await message.channel.send(l)
+        await message.channel.send(library())
 
     elif "hey hagrid" in msg:
         stat(message, "hey hagrid")
