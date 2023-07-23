@@ -1,5 +1,4 @@
 import datetime
-import math
 import os
 import random
 from functools import lru_cache
@@ -8,12 +7,12 @@ from typing import List
 import discord
 import numpy as np
 import pytz as pytz
+import shelve
 from cachetools import TTLCache, cached
 from discord import Message
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
-import shelve
 from data import HAGRID_COMMANDS
 from openai_utils import generate_embedding, generate_text
 
@@ -65,6 +64,7 @@ def setup():
     CREATE TABLE IF NOT EXISTS summaries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         guild INTEGER,
+        channel INTEGER,
         from_date DATETIME,
         to_date DATETIME,
         summary TEXT,
@@ -178,7 +178,7 @@ def search(guild_id: int, embedding: np.array, samples: int = 3) -> List[str]:
 
     top_ids = np.argsort(-similarities)[:samples]
 
-    return [messages[i] for i in top_ids if similarities[i] > best_guess * 0.75]
+    return [messages[i] for i in top_ids if similarities[i] > best_guess * 0.9]
 
 
 def find_best_summaries(
@@ -259,14 +259,14 @@ def get_yesterday_boundary() -> (datetime, datetime):
 
 
 @lru_cache(3)
-def get_summary(guild_id, offset: int = 0, max_length: int = 32768):
+def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 32768):
     from_date, to_date = get_yesterday_boundary()
     from_date = from_date - datetime.timedelta(days=offset)
     to_date = to_date - datetime.timedelta(days=offset)
 
     summary = con.execute(
-        "SELECT summary FROM summaries WHERE guild=? AND from_date=? AND to_date=?",
-        (guild_id, from_date, to_date),
+        "SELECT summary FROM summaries WHERE guild=? AND channel=? AND from_date=? AND to_date=?",
+        (guild_id, channel_id, from_date, to_date),
     ).fetchone()
 
     if summary is None:
@@ -275,9 +275,9 @@ def get_summary(guild_id, offset: int = 0, max_length: int = 32768):
             SELECT content, names.name as username
             FROM messages
             LEFT JOIN names ON names.id=messages.author
-            WHERE guild=? AND date BETWEEN ? AND ?
+            WHERE guild=? AND (? < 0 OR channel=?) AND date BETWEEN ? AND ?
             """,
-            (guild_id, from_date, to_date),
+            (guild_id, channel_id, channel_id, from_date, to_date),
         ).fetchall()
 
         original_count = len(messages)
@@ -295,22 +295,21 @@ def get_summary(guild_id, offset: int = 0, max_length: int = 32768):
         if len(prompt) < 32:
             return "Nothing.", from_date, to_date
 
-        # Also fetch yesterday's summary to connect information
-        yesterdays_summary = get_summary(
-            guild_id, offset + 1, max_length=math.ceil(max_length * 0.95)
-        )
-
-        prompt = f"Yesterdays summary:\n{yesterdays_summary}\n\nToday's new conversations:{prompt}\n\nToday's summary"
+        prompt = f"Today's new conversations:{prompt}\n\nToday's summary"
 
         # Generate summary
-        system_prompt = "You are a language model tasked with summarizing following conversation on a public Discord server. Be short and concise and start the sentence differently than yesterday."
+        where = (
+            "public Discord server"
+            if channel_id < 0
+            else "specific Discord server channel"
+        )
+        system_prompt = f"You are a language model tasked with summarizing following conversation on a {where} in a concise way."
         summary = generate_text(
             prompt,
             system_prompt=system_prompt,
             max_tokens=256,
             model="gpt-3.5-turbo-16k" if len(prompt) > 1024 * 12 else "gpt-3.5-turbo",
-            presence_penalty=0.5,
-            frequency_penalty=0.5,
+            temperature=0.25,
         )
 
         # Embed the summary for faster indexing
@@ -319,10 +318,10 @@ def get_summary(guild_id, offset: int = 0, max_length: int = 32768):
         # Cache summary
         con.execute(
             """
-            INSERT INTO summaries (guild, from_date, to_date, summary, embedding) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO summaries (guild, channel, from_date, to_date, summary, embedding) 
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (guild_id, from_date, to_date, summary, embedding),
+            (guild_id, channel_id, from_date, to_date, summary, embedding),
         )
         con.commit()
 
@@ -461,25 +460,45 @@ async def on_message(message):
     if msg.startswith("hagrid what happened"):
         await message.channel.typing()
 
+        here = msg.startswith("hagrid what happened here")
+
         try:
-            history_length = int(msg.replace("hagrid what happened", "").strip())
+            history_length = int(
+                msg.replace(
+                    "hagrid what happened here" if here else "hagrid what happened", ""
+                ).strip()
+            )
         except ValueError:
-            history_length = 3
+            history_length = 1 if here else 3
+
+        history_length = min(7, history_length)
 
         # Get the summary of the last 3 days
-        summaries = [get_summary(message.guild.id, i) for i in range(history_length)]
+        summaries = [
+            get_summary(message.guild.id, message.channel.id if here else -1, i)
+            for i in range(history_length)
+        ]
         summaries.reverse()
 
-        # noinspection SpellCheckingInspection
-        await message.channel.send(
-            "Right then, 'ere's the summary o' the last few days!\n"
-            + "\n\n".join(
-                [
-                    f'**{to_date.strftime("%Y, %d %B")}:**\n{summary}'
-                    for (summary, from_date, to_date) in summaries
-                ]
-            )
+        msg = (
+            ""
+            if history_length == 1
+            else "Right then, 'ere's the summary o' the last few days!\n"
+        ) + "\n\n".join(
+            [
+                f'**{to_date.strftime("%Y, %d %B")}:**\n{summary}'
+                for (summary, from_date, to_date) in summaries
+            ]
         )
+
+        # noinspection SpellCheckingInspection
+        if len(msg) > 1500:
+            for (summary, from_date, to_date) in summaries:
+                await message.channel.send(
+                    f'**{to_date.strftime("%Y, %d %B")}:**\n{summary}'
+                )
+        else:
+            await message.channel.send(msg)
 
     convo_id = f"{message.author.id}_{message.channel.id}"
 
@@ -498,8 +517,8 @@ async def on_message(message):
 
         active_conversations[convo_id] = datetime.datetime.now()
 
-        # We are not interested in the summary, but let's enforce generating it
-        get_summary(message.guild.id)
+        # We are not interested in this specific summary, but let's enforce generating it for the lookup
+        get_summary(message.guild.id, -1)
 
         # Fetch the embedding of the input text to look for similar topics
         embedding = generate_embedding(message.clean_content)
@@ -527,7 +546,7 @@ async def on_message(message):
         messages = [(m[0].replace("\n", " "), m[1]) for m in messages]
         messages = [f"{m[1]}: {m[0]}" for m in messages]
 
-        messages = messages[0:1] + drop_until(messages[1:], 2048)
+        messages = messages[0:3] + drop_until(messages[3:], 2048)
 
         messages.reverse()
 
@@ -538,7 +557,7 @@ async def on_message(message):
         system_prompts = "You are the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent. This is a conversation between one or more users, where you actively take part in chatting."
 
         # Build prompt
-        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat would Hagrid now respond? Respond with his thick west country accent!"
+        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat would Hagrid now respond? Respond with his thick west country accent! Keep it short but complete."
 
         print(prompt, len(prompt), len(summary), len(who), len(history))
 
@@ -547,7 +566,7 @@ async def on_message(message):
             generate_text(
                 prompt=prompt,
                 system_prompt=system_prompts,
-                max_tokens=120,
+                max_tokens=150,
                 temperature=0.8,
                 frequency_penalty=0.1,
             )
