@@ -82,6 +82,15 @@ def setup():
     """
     )
 
+    con.execute(
+        """
+    CREATE TABLE IF NOT EXISTS blocked_users (
+        id INTEGER PRIMARY KEY,
+        reasons TEXT
+    )
+    """
+    )
+
 
 setup()
 
@@ -116,7 +125,8 @@ def get_all_embeddings(guild_id: int) -> (np.array, List[str]):
         FROM messages
         LEFT JOIN embeddings ON messages.id=embeddings.message_id
         LEFT JOIN names ON messages.channel=names.id
-        WHERE indexed = TRUE AND guild = ? AND length(content) > ?
+        LEFT JOIN blocked_users ON messages.author=blocked_users.id
+        WHERE blocked_users.id IS NULL AND indexed = TRUE AND guild = ? AND length(content) > ?
     """,
         (
             guild_id,
@@ -275,7 +285,8 @@ def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 32768):
             SELECT content, names.name as username
             FROM messages
             LEFT JOIN names ON names.id=messages.author
-            WHERE guild=? AND (? < 0 OR channel=?) AND date BETWEEN ? AND ?
+            LEFT JOIN blocked_users ON messages.author=blocked_users.id
+            WHERE blocked_users.id IS NULL AND guild=? AND (? < 0 OR channel=?) AND date BETWEEN ? AND ?
             """,
             (guild_id, channel_id, channel_id, from_date, to_date),
         ).fetchall()
@@ -536,7 +547,8 @@ async def on_message(message):
             SELECT content, names.name as username
             FROM messages
             LEFT JOIN names ON names.id=messages.author
-            WHERE channel=?
+            LEFT JOIN blocked_users ON messages.author=blocked_users.id
+            WHERE channel=? AND blocked_users.id IS NULL
             ORDER BY date DESC 
             LIMIT ?
             """,
