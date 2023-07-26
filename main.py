@@ -9,10 +9,8 @@ from data import HAGRID_BEDROCK
 from hagrid import hagrid
 from library import library
 from sirben import SIRBEN_VERSES
-
-import shelve
-
 from smart_hagrid import on_smart_message
+from stats import stat, stats
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -22,25 +20,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
-
-
-os.makedirs("shelve/", exist_ok=True)
-
-stats = shelve.open("shelve/stats")
-
-
-def stat(message, typ):
-    guild = message.guild.name
-    if guild in stats:
-        g: dict = stats[guild]
-        if typ in g:
-            g[typ] += 1
-        else:
-            g[typ] = 1
-        stats[guild] = g
-    else:
-        stats[guild] = {typ: 1}
-    stats.sync()
 
 
 @client.event

@@ -13,6 +13,7 @@ from tqdm.auto import tqdm
 
 from data import HAGRID_COMMANDS
 from openai_utils import generate_embedding, generate_text, num_tokens_from_string
+from stats import stat
 
 os.makedirs("shelve/", exist_ok=True)
 
@@ -397,6 +398,7 @@ async def on_smart_message(message):
 
     # Basic commands
     if msg.startswith("/hagrid"):
+        stat(message, "command")
         if msg == "/hagrid guild extend":
             settings[str(message.guild.id)] = True
             await message.delete()
@@ -425,6 +427,8 @@ async def on_smart_message(message):
 
     # Search for stuff
     if msg.startswith("hagrid search"):
+        stat(message, "search")
+
         await message.channel.typing()
 
         if message.reference and message.reference.resolved:
@@ -454,6 +458,8 @@ async def on_smart_message(message):
 
     # Summarize a timespan
     if msg.startswith("hagrid what happened"):
+        stat(message, "summary")
+
         await message.channel.typing()
 
         here = msg.startswith("hagrid what happened here")
@@ -509,6 +515,8 @@ async def on_smart_message(message):
         and (datetime.datetime.now() - active_conversations[convo_id]).seconds
         < MAX_CONVERSATION_TIME
     ):
+        stat(message, "hallo hagrid")
+
         await message.channel.typing()
 
         FIXED_HISTORY_N = 5
