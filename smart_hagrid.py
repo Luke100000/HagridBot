@@ -4,26 +4,15 @@ import random
 from functools import lru_cache
 from typing import List
 
-import discord
 import numpy as np
 import pytz as pytz
 import shelve
 from cachetools import TTLCache, cached
 from discord import Message
-from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
 from data import HAGRID_COMMANDS
 from openai_utils import generate_embedding, generate_text, num_tokens_from_string
-
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
-
-intents = discord.Intents.default()
-
-intents.message_content = True
-
-client = discord.Client(intents=intents)
 
 os.makedirs("shelve/", exist_ok=True)
 
@@ -359,11 +348,6 @@ def set_index_status(channel_id, active: bool):
     )
 
 
-@client.event
-async def on_ready():
-    print(f"{client.user} has connected to Discord!")
-
-
 async def track(message: Message):
     after = None
     if str(message.channel.id) in progress:
@@ -406,11 +390,7 @@ async def track(message: Message):
     return count
 
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
+async def on_smart_message(message):
     msg = message.clean_content.lower()
 
     tracked = str(message.guild.id) in settings
@@ -455,7 +435,9 @@ async def on_message(message):
             )
 
         best = search(message.guild.id, embedding)
-        return await message.channel.send("Check out those links: " + (" ".join(best)))
+        await message.channel.send("Check out those links: " + (" ".join(best)))
+
+        return True
 
     # Summarize someones personality
     if "hagrid who is" in msg:
@@ -468,7 +450,7 @@ async def on_message(message):
             description = who_is(who)
             await message.channel.send(description)
 
-        return
+        return True
 
     # Summarize a timespan
     if msg.startswith("hagrid what happened"):
@@ -514,13 +496,13 @@ async def on_message(message):
         else:
             await message.channel.send(msg)
 
-        return
+        return True
 
     convo_id = f"{message.author.id}_{message.channel.id}"
 
     if msg == "bye hagrid" and convo_id in active_conversations:
         del active_conversations[convo_id]
-        return
+        return True
 
     if "hallo hagrid" in msg or (
         convo_id in active_conversations
@@ -530,7 +512,7 @@ async def on_message(message):
         await message.channel.typing()
 
         FIXED_HISTORY_N = 5
-        MAX_HISTORY_N = 48
+        MAX_HISTORY_N = 32
         WHO_IS_CONTEXT_LENGTH = 512
         HISTORY_LENGTH = 512
 
@@ -580,9 +562,7 @@ async def on_message(message):
         system_prompts = "You are the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent. This is a conversation between one or more users, where you actively take part in chatting."
 
         # Build prompt
-        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat short answer would Hagrid now respond? Respond with his thick west country accent!"
-
-        print(prompt, len(prompt), len(summary), len(who), len(history))
+        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat short answer would Hagrid now respond? Respond with his thick west country accent! Consider the persons profile summary."
 
         # Request
         await message.channel.send(
@@ -597,5 +577,4 @@ async def on_message(message):
             .strip()
         )
 
-
-client.run(TOKEN)
+        return True

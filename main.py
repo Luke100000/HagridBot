@@ -12,6 +12,7 @@ from sirben import SIRBEN_VERSES
 
 import shelve
 
+from smart_hagrid import on_smart_message
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -50,6 +51,9 @@ async def on_ready():
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+
+    if await on_smart_message(message):
         return
 
     msg = message.content.lower()
