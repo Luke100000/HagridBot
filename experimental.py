@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
 from data import HAGRID_COMMANDS
-from openai_utils import generate_embedding, generate_text
+from openai_utils import generate_embedding, generate_text, num_tokens_from_string
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -188,7 +188,7 @@ def search(guild_id: int, embedding: np.array, samples: int = 3) -> List[str]:
 
     top_ids = np.argsort(-similarities)[:samples]
 
-    return [messages[i] for i in top_ids if similarities[i] > best_guess * 0.9]
+    return [messages[i] for i in top_ids if similarities[i] > best_guess * 0.95]
 
 
 def find_best_summaries(
@@ -221,18 +221,17 @@ def find_best_summaries(
     return [results[i][0] for i in top_ids if similarities[i] > best_guess * 0.75]
 
 
-def drop_until(messages: List[str], max_size: int, random_index=True):
-    total = sum([len(m) for m in messages])
-    while len(messages) > 0 and total > max_size:
-        if random_index:
-            total -= len(messages.pop(random.randrange(len(messages))))
-        else:
-            total -= len(messages.pop())
+def drop_until(messages: List[str], max_size: int, encoding_name="gpt-3.5-turbo"):
+    while (
+        len(messages) > 0
+        and num_tokens_from_string("\n".join(messages), encoding_name) > max_size
+    ):
+        messages.pop(random.randrange(len(messages)))
     return messages
 
 
 @cached(cache=TTLCache(maxsize=300, ttl=3600))
-def who_is(user_id, max_length=8192):
+def who_is(user_id, max_length=3000):
     messages = con.execute(
         "SELECT content FROM messages WHERE author=? ORDER BY RANDOM() LIMIT 1000",
         (user_id,),
@@ -269,7 +268,7 @@ def get_yesterday_boundary() -> (datetime, datetime):
 
 
 @lru_cache(3)
-def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 32768):
+def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 3500):
     from_date, to_date = get_yesterday_boundary()
     from_date = from_date - datetime.timedelta(days=offset)
     to_date = to_date - datetime.timedelta(days=offset)
@@ -291,19 +290,18 @@ def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 32768):
             (guild_id, channel_id, channel_id, from_date, to_date),
         ).fetchall()
 
+        messages = [f"{m[1]}: {m[0]}" for m in messages if not m[0].startswith("/")]
+
         original_count = len(messages)
 
-        prompt = None
-        while prompt is None or (len(prompt) > max_length and len(messages) > 1):
-            prompt = "> " + "\n> ".join(
-                [f"{m[1]}: {m[0]}" for m in messages if not m[0].startswith("/")]
-            )
+        # Crop to fit into context size
+        messages = drop_until(messages, max_length)
 
-            # Remove a message
-            if len(messages) > 0:
-                messages.pop(random.randrange(len(messages)))
+        # Construct prompt
+        prompt = "> " + "\n> ".join(messages)
 
-        if len(prompt) < 32:
+        # No need to summarize a single message
+        if len(prompt) < 64:
             return "Nothing.", from_date, to_date
 
         prompt = f"Today's new conversations:{prompt}\n\nToday's summary"
@@ -319,7 +317,7 @@ def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 32768):
             prompt,
             system_prompt=system_prompt,
             max_tokens=256,
-            model="gpt-3.5-turbo-16k" if len(prompt) > 1024 * 12 else "gpt-3.5-turbo",
+            model="gpt-3.5-turbo",
             temperature=0.25,
         )
 
@@ -415,23 +413,7 @@ async def on_message(message):
 
     msg = message.clean_content.lower()
 
-    # Track messages
-    if str(message.guild.id) in settings:
-        await track(message)
-
-    # Search for stuff
-    if msg.startswith("hagrid search"):
-        await message.channel.typing()
-
-        if message.reference and message.reference.resolved:
-            embedding = generate_embedding(message.reference.resolved.clean_content)
-        else:
-            embedding = generate_embedding(
-                message.clean_content.replace("hagrid search", "")
-            )
-
-        best = search(message.guild.id, embedding)
-        await message.channel.send("Check out those links: " + (" ".join(best)))
+    tracked = str(message.guild.id) in settings
 
     # Basic commands
     if msg.startswith("/hagrid"):
@@ -452,9 +434,28 @@ async def on_message(message):
             await message.delete()
             while await track(message) > 0:
                 pass
-
         else:
             await message.channel.send(HAGRID_COMMANDS)
+
+    # Track messages
+    if tracked:
+        await track(message)
+    else:
+        return
+
+    # Search for stuff
+    if msg.startswith("hagrid search"):
+        await message.channel.typing()
+
+        if message.reference and message.reference.resolved:
+            embedding = generate_embedding(message.reference.resolved.clean_content)
+        else:
+            embedding = generate_embedding(
+                message.clean_content.replace("hagrid search", "")
+            )
+
+        best = search(message.guild.id, embedding)
+        return await message.channel.send("Check out those links: " + (" ".join(best)))
 
     # Summarize someones personality
     if "hagrid who is" in msg:
@@ -466,6 +467,8 @@ async def on_message(message):
             who = message.mentions[0].id
             description = who_is(who)
             await message.channel.send(description)
+
+        return
 
     # Summarize a timespan
     if msg.startswith("hagrid what happened"):
@@ -480,7 +483,7 @@ async def on_message(message):
                 ).strip()
             )
         except ValueError:
-            history_length = 1 if here else 3
+            history_length = 1
 
         history_length = min(7, history_length)
 
@@ -511,25 +514,31 @@ async def on_message(message):
         else:
             await message.channel.send(msg)
 
+        return
+
     convo_id = f"{message.author.id}_{message.channel.id}"
 
-    if "bye hagrid" in msg and convo_id in active_conversations:
+    if msg == "bye hagrid" and convo_id in active_conversations:
         del active_conversations[convo_id]
+        return
 
-    if (
-        "hallo hagrid" in msg
-        or (
-            convo_id in active_conversations
-            and (datetime.datetime.now() - active_conversations[convo_id]).seconds
-            < MAX_CONVERSATION_TIME
-        )
-    ) and str(message.guild.id) in settings:
+    if "hallo hagrid" in msg or (
+        convo_id in active_conversations
+        and (datetime.datetime.now() - active_conversations[convo_id]).seconds
+        < MAX_CONVERSATION_TIME
+    ):
         await message.channel.typing()
+
+        FIXED_HISTORY_N = 5
+        MAX_HISTORY_N = 48
+        WHO_IS_CONTEXT_LENGTH = 512
+        HISTORY_LENGTH = 512
 
         active_conversations[convo_id] = datetime.datetime.now()
 
         # We are not interested in this specific summary, but let's enforce generating it for the lookup
         get_summary(message.guild.id, -1)
+        get_summary(message.guild.id, message.channel.id)
 
         # Fetch the embedding of the input text to look for similar topics
         embedding = generate_embedding(message.clean_content)
@@ -539,7 +548,7 @@ async def on_message(message):
         summary = "\n\n".join(summaries)
 
         # Fetch info about the trigger
-        who = who_is(message.author.id, max_length=4096)
+        who = who_is(message.author.id, max_length=WHO_IS_CONTEXT_LENGTH)
 
         # Use the last few messages from the channel as context
         messages = con.execute(
@@ -552,13 +561,15 @@ async def on_message(message):
             ORDER BY date DESC 
             LIMIT ?
             """,
-            (message.channel.id, 32),
+            (message.channel.id, MAX_HISTORY_N),
         ).fetchall()
 
         messages = [(m[0].replace("\n", " "), m[1]) for m in messages]
         messages = [f"{m[1]}: {m[0]}" for m in messages]
 
-        messages = messages[0:3] + drop_until(messages[3:], 2048)
+        messages = messages[0:FIXED_HISTORY_N] + drop_until(
+            messages[FIXED_HISTORY_N:], HISTORY_LENGTH
+        )
 
         messages.reverse()
 
@@ -569,7 +580,7 @@ async def on_message(message):
         system_prompts = "You are the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent. This is a conversation between one or more users, where you actively take part in chatting."
 
         # Build prompt
-        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat would Hagrid now respond? Respond with his thick west country accent! Keep it short but complete."
+        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat short answer would Hagrid now respond? Respond with his thick west country accent!"
 
         print(prompt, len(prompt), len(summary), len(who), len(history))
 

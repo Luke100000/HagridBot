@@ -4,6 +4,7 @@ from typing import Optional, Union, List
 
 import numpy as np
 import openai as openai
+import tiktoken
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -66,3 +67,9 @@ def generate_text(
         choice.message["content"].strip() for choice in response["choices"]
     ]
     return generated_texts[0] if n == 1 else generated_texts
+
+
+def num_tokens_from_string(string: str, encoding_name: str) -> int:
+    encoding = tiktoken.encoding_for_model(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
