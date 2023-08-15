@@ -527,8 +527,9 @@ async def on_smart_message(message):
         active_conversations[convo_id] = datetime.datetime.now()
 
         # We are not interested in this specific summary, but let's enforce generating it for the lookup
-        get_summary(message.guild.id, -1)
-        get_summary(message.guild.id, message.channel.id)
+        if False:
+            get_summary(message.guild.id, -1)
+            get_summary(message.guild.id, message.channel.id)
 
         # Fetch the embedding of the input text to look for similar topics
         embedding = generate_embedding(message.clean_content)
@@ -538,7 +539,8 @@ async def on_smart_message(message):
         summary = "\n\n".join(summaries)
 
         # Fetch info about the trigger
-        who = who_is(message.author.id, max_length=WHO_IS_CONTEXT_LENGTH)
+        if False:
+            who = who_is(message.author.id, max_length=WHO_IS_CONTEXT_LENGTH)
 
         # Use the last few messages from the channel as context
         messages = con.execute(
@@ -567,10 +569,11 @@ async def on_smart_message(message):
         history = "\n".join(messages).replace("HagridBot", "Hagrid")
 
         # Define Hagrid
-        system_prompts = "You are the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent. This is a conversation between one or more users, where you actively take part in chatting."
+        system_prompts = "You are the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent. He is a man of few words. This is a conversation between one or more users, where Hagrid takes part."
 
         # Build prompt
-        prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat short answer would Hagrid now respond? Respond with his thick west country accent! Consider the persons profile summary."
+        # prompt = f"Context from the past:\n{summary}\n\n{message.author.name}'s profile summary:\n{who}\n\nConversation:\n{history}\n\nWhat short answer would Hagrid now respond? Respond with his thick west country accent!"
+        prompt = f"Conversation:\n{history}\n\nWhat short answer would Hagrid now respond? Respond with his thick west country accent!"
 
         # Request
         await message.channel.send(
