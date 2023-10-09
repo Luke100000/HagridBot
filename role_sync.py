@@ -88,7 +88,7 @@ def update_member(member: Member):
             "token": HAGRID_SECRET,
             "discord_username": member.display_name,
             "roles": ", ".join(
-                [role.name for role in member.roles if role != "@everyone"]
+                [role.name for role in member.roles if role.name != "@everyone"]
             ),
         },
     )
