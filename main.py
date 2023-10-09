@@ -8,6 +8,7 @@ from config import retrieve
 from data import HAGRID_BEDROCK
 from hagrid import hagrid
 from library import library
+from role_sync import role_sync_command, sync_users
 from sirben import SIRBEN_VERSES
 from smart_hagrid import on_smart_message
 from stats import stat, stats
@@ -18,6 +19,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 
 intents.message_content = True
+intents.members = True
 
 client = discord.Client(intents=intents)
 
@@ -25,6 +27,11 @@ client = discord.Client(intents=intents)
 @client.event
 async def on_ready():
     print(f"{client.user} has connected to Discord!")
+
+
+@client.event
+async def on_interaction(interaction):
+    await role_sync_command(interaction)
 
 
 @client.event
@@ -108,6 +115,8 @@ async def on_message(message):
         stat(message, "hey hagrid")
         await message.channel.typing()
         await message.channel.send(hagrid(msg))
+
+    await sync_users(message)
 
 
 client.run(TOKEN)
