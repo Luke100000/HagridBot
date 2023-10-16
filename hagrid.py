@@ -11,6 +11,7 @@ def hagrid(query):
             "player": "User",
             "villager": "Hagrid",
         },
+        timeout=5.0,
     )
 
     return response.json()["answer"].strip()

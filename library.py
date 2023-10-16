@@ -10,7 +10,10 @@ def escape_markdown(t):
 
 
 def library():
-    response: List = requests.get(api_url).json()["users"]
+    response: List = requests.get(
+        api_url,
+        timeout=5.0,
+    ).json()["users"]
 
     most_likes = sorted(response, key=lambda v: v["likes_received"], reverse=True)[:3]
     most_submissions = sorted(

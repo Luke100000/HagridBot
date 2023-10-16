@@ -19,6 +19,7 @@ LINK_API_IN_USE = False
 def register_command(command: dict):
     requests.post(
         url,
+        timeout=5.0,
         headers=headers,
         json=command,
     )
@@ -59,6 +60,7 @@ URL = "https://api.conczin.net"
 async def delete_user(interaction: Interaction, username: str):
     response = requests.delete(
         URL + f"/v1/minecraft/{interaction.guild.id}/{username}",
+        timeout=5.0,
         params={"token": HAGRID_SECRET},
     )
     if "error" in response.json():
@@ -78,12 +80,14 @@ def create_member(member: Member, username: str = None):
             "minecraft_username": username,
             "roles": ", ".join([role.name for role in member.roles]),
         },
+        timeout=5.0,
     )
 
 
 def update_member(member: Member):
     return requests.put(
         URL + f"/v1/minecraft/{member.guild.id}/{member.id}",
+        timeout=5.0,
         params={
             "token": HAGRID_SECRET,
             "discord_username": member.display_name,
