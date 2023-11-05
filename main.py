@@ -2,6 +2,7 @@ import os
 import random
 
 import discord
+from discord import Message
 from dotenv import load_dotenv
 
 from config import retrieve
@@ -15,6 +16,8 @@ from stats import stat, stats
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
+
+DEBUG = bool(os.getenv("HAGRID_DEBUG"))
 
 intents = discord.Intents.default()
 
@@ -35,11 +38,11 @@ async def on_interaction(interaction):
 
 
 @client.event
-async def on_message(message):
+async def on_message(message: Message):
     if message.author == client.user:
         return
 
-    if await on_smart_message(message):
+    if not DEBUG and await on_smart_message(message):
         return
 
     msg = message.content.lower()
@@ -87,6 +90,24 @@ async def on_message(message):
         stat(message, "log")
         await message.channel.send(
             f"Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
+        )
+
+    elif len(message.attachments) > 0:
+        for attachment in message.attachments:
+            if (
+                attachment.content_type is not None
+                and attachment.content_type.startswith("text/plain")
+            ):
+                if "Mod ID: 'architectury', Requested by: 'mca', Expected range: '" in (
+                    await attachment.read()
+                ).decode("utf-8"):
+                    await message.channel.send(
+                        "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
+                    )
+
+    elif "error 1" in msg or "error code 1" in msg:
+        await message.channel.send(
+            "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
         )
 
     elif "hagrid skins" in msg:
