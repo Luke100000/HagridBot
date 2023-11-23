@@ -1,14 +1,16 @@
+import asyncio
 import os
 import random
 
 import discord
-from discord import Message
+from discord import Message, File
 from dotenv import load_dotenv
 
 from config import retrieve
 from data import HAGRID_BEDROCK
 from hagrid import hagrid
 from library import library
+from paint import paint
 from role_sync import role_sync_command, sync_users
 from sirben import SIRBEN_VERSES
 from smart_hagrid import on_smart_message
@@ -105,10 +107,15 @@ async def on_message(message: Message):
                         "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
                     )
 
-    elif "error 1" in msg or "error code 1" in msg:
+    elif "error 1" in msg or "error code 1" in msg or "exit code 1" in msg:
         await message.channel.send(
             "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
         )
+
+    elif "hagrid paint" in msg and len(msg) > 15:
+        await message.channel.send("Alright, give me a few seconds!")
+        await asyncio.to_thread(paint, msg.replace("hagrid paint", "").strip())
+        await message.channel.send("Here, I hope you like it!", file=File("./image.jpg"))
 
     elif "hagrid skins" in msg:
         stat(message, "skins")

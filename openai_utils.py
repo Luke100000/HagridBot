@@ -1,10 +1,10 @@
 import os
-from functools import lru_cache
 from typing import Optional, Union, List
 
 import numpy as np
 import openai as openai
 import tiktoken
+from cache import AsyncLRU
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,18 +12,18 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-@lru_cache(256)
-def generate_embedding(text: str) -> np.array:
+@AsyncLRU(256)
+async def generate_embedding(text: str) -> np.array:
     text = text.replace("\n", " ")
     return np.asarray(
-        openai.Embedding.create(input=[text], model="text-embedding-ada-002")["data"][
-            0
-        ]["embedding"],
+        (await openai.Embedding.acreate(input=[text], model="text-embedding-ada-002"))[
+            "data"
+        ][0]["embedding"],
         dtype=np.float32,
     )
 
 
-def generate_text(
+async def generate_text(
     prompt: str,
     model: str = "gpt-3.5-turbo",
     system_prompt: str = "You are a helpful assistant.",
@@ -52,7 +52,7 @@ def generate_text(
         {"role": "user", "content": prompt},
     ]
 
-    response = openai.ChatCompletion.create(
+    response = await openai.ChatCompletion.acreate(
         model=model,
         messages=messages,
         temperature=temperature,

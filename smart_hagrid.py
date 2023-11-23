@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 import pytz as pytz
 import shelve
-from cachetools import TTLCache, cached
+from cache import AsyncLRU
 from discord import Message
 from tqdm.auto import tqdm
 
@@ -23,6 +23,8 @@ settings = shelve.open("shelve/settings")
 import sqlite3
 
 con = sqlite3.connect("shelve/database.db")
+
+SUPER_SMART = False
 
 
 def setup():
@@ -182,7 +184,7 @@ def search(guild_id: int, embedding: np.array, samples: int = 3) -> List[str]:
 
 
 def find_best_summaries(
-    guild_id: int, embedding: np.array, samples: int = 1
+        guild_id: int, embedding: np.array, samples: int = 1
 ) -> List[str]:
     """
     Searches for summaries most similar to a user query
@@ -213,15 +215,15 @@ def find_best_summaries(
 
 def drop_until(messages: List[str], max_size: int, encoding_name="gpt-3.5-turbo"):
     while (
-        len(messages) > 0
-        and num_tokens_from_string("\n".join(messages), encoding_name) > max_size
+            len(messages) > 0
+            and num_tokens_from_string("\n".join(messages), encoding_name) > max_size
     ):
         messages.pop(random.randrange(len(messages)))
     return messages
 
 
-@cached(cache=TTLCache(maxsize=300, ttl=3600))
-def who_is(user_id, max_length=3000):
+@AsyncLRU(3600)
+async def who_is(user_id, max_length=3000):
     messages = con.execute(
         "SELECT content FROM messages WHERE author=? ORDER BY RANDOM() LIMIT 1000",
         (user_id,),
@@ -235,7 +237,7 @@ def who_is(user_id, max_length=3000):
     print(f"Describing user with {len(messages)} messages and {len(prompt)} chars")
 
     system_prompt = "You are a language model tasked with describing this person in a few honest sentences, based on their past messages. Put focus on personality and behavior."
-    return generate_text(prompt, system_prompt=system_prompt, max_tokens=256)
+    return await generate_text(prompt, system_prompt=system_prompt, max_tokens=256)
 
 
 def get_yesterday_boundary() -> (datetime, datetime):
@@ -257,8 +259,8 @@ def get_yesterday_boundary() -> (datetime, datetime):
     return yesterday - datetime.timedelta(days=1), yesterday
 
 
-@lru_cache(3)
-def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 3500):
+@AsyncLRU(3)
+async def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 3500):
     from_date, to_date = get_yesterday_boundary()
     from_date = from_date - datetime.timedelta(days=offset)
     to_date = to_date - datetime.timedelta(days=offset)
@@ -303,7 +305,7 @@ def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 3500):
             else "specific Discord server channel"
         )
         system_prompt = f"You are a language model tasked with summarizing following conversation on a {where} in a concise way."
-        summary = generate_text(
+        summary = await generate_text(
             prompt,
             system_prompt=system_prompt,
             max_tokens=256,
@@ -361,7 +363,7 @@ async def track(message: Message):
 
     count = 0
     async for received in message.channel.history(
-        limit=100, after=after, oldest_first=True
+            limit=100, after=after, oldest_first=True
     ):
         if received.clean_content and not received.clean_content.startswith("/hagrid"):
             set_name(received.author.id, received.author.name)
@@ -451,7 +453,7 @@ async def on_smart_message(message):
             await message.channel.send(f"Yer have to mention someone!")
         else:
             who = message.mentions[0].id
-            description = who_is(who)
+            description = await who_is(who)
             await message.channel.send(description)
 
         return True
@@ -483,10 +485,10 @@ async def on_smart_message(message):
         summaries.reverse()
 
         msg = (
-            ""
-            if history_length == 1
-            else "Right then, 'ere's the summary o' the last few days!\n"
-        ) + "\n\n".join(
+                  ""
+                  if history_length == 1
+                  else "Right then, 'ere's the summary o' the last few days!\n"
+              ) + "\n\n".join(
             [
                 f'**{to_date.strftime("%Y, %d %B")}:**\n{summary}'
                 for (summary, from_date, to_date) in summaries
@@ -511,9 +513,9 @@ async def on_smart_message(message):
         return True
 
     if "hallo hagrid" in msg or (
-        convo_id in active_conversations
-        and (datetime.datetime.now() - active_conversations[convo_id]).seconds
-        < MAX_CONVERSATION_TIME
+            convo_id in active_conversations
+            and (datetime.datetime.now() - active_conversations[convo_id]).seconds
+            < MAX_CONVERSATION_TIME
     ):
         stat(message, "hallo hagrid")
 
@@ -527,20 +529,20 @@ async def on_smart_message(message):
         active_conversations[convo_id] = datetime.datetime.now()
 
         # We are not interested in this specific summary, but let's enforce generating it for the lookup
-        if False:
-            get_summary(message.guild.id, -1)
-            get_summary(message.guild.id, message.channel.id)
+        if SUPER_SMART:
+            await get_summary(message.guild.id, -1)
+            await get_summary(message.guild.id, message.channel.id)
 
-        # Fetch the embedding of the input text to look for similar topics
-        embedding = generate_embedding(message.clean_content)
+            # Fetch the embedding of the input text to look for similar topics
+            embedding = await generate_embedding(message.clean_content)
 
-        # Use similar memories from the past
-        summaries = find_best_summaries(message.guild.id, embedding)
-        summary = "\n\n".join(summaries)
+            # Use similar memories from the past
+            summaries = find_best_summaries(message.guild.id, embedding)
+            summary = "\n\n".join(summaries)
 
         # Fetch info about the trigger
-        if False:
-            who = who_is(message.author.id, max_length=WHO_IS_CONTEXT_LENGTH)
+        if SUPER_SMART:
+            who = await who_is(message.author.id, max_length=WHO_IS_CONTEXT_LENGTH)
 
         # Use the last few messages from the channel as context
         messages = con.execute(
@@ -577,12 +579,14 @@ async def on_smart_message(message):
 
         # Request
         await message.channel.send(
-            generate_text(
-                prompt=prompt,
-                system_prompt=system_prompts,
-                max_tokens=150,
-                temperature=0.8,
-                frequency_penalty=0.1,
+            (
+                await generate_text(
+                    prompt=prompt,
+                    system_prompt=system_prompts,
+                    max_tokens=150,
+                    temperature=0.8,
+                    frequency_penalty=0.1,
+                )
             )
             .replace("Hagrid:", "")
             .strip()
