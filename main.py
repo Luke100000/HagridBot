@@ -136,14 +136,24 @@ async def on_message(message: Message):
         )
 
     elif message.guild.id in WHITELISTED_GUILDS and "hagrid usage stats" in msg:
+        characters = 80
         lines = ["Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:", "```md"]
         for guild in sorted(list(stats.keys())):
             lines.append("# " + guild)
             # noinspection PyUnresolvedReferences
             for value in sorted(list(stats[guild].keys())):
                 # noinspection PyUnresolvedReferences
-                lines.append(f"* {value}: {stats[guild][value]}")
-            lines.append("")
+                l = f"* {value}: {stats[guild][value]}"
+                lines.append(l.replace("_", " ").replace("*", " "))
+                characters += len(l)
+
+            if characters > 1400:
+                characters = 0
+                lines.append("```")
+                await message.channel.send("\n".join(lines))
+                lines = ["```md"]
+            else:
+                lines.append("")
         lines.append("```")
 
         await message.channel.send("\n".join(lines))
