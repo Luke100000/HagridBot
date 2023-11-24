@@ -15,6 +15,13 @@ headers = {"Authorization": "Bot " + TOKEN}
 
 LINK_API_IN_USE = False
 
+SYNC_ROLES = {
+    "Iron",
+    "Gold",
+    "Diamond",
+    "Moderator",
+}
+
 
 def register_command(command: dict):
     requests.post(
@@ -71,6 +78,10 @@ async def delete_user(interaction: Interaction, username: str):
         await interaction.response.send_message("Username's been unlinked, it has.")
 
 
+def get_roles(member):
+    return [role.name for role in member.roles if role.name in SYNC_ROLES]
+
+
 def create_member(member: Member, username: str = None):
     return requests.post(
         URL + f"/v1/minecraft/{member.guild.id}/{member.id}",
@@ -78,7 +89,7 @@ def create_member(member: Member, username: str = None):
             "token": HAGRID_SECRET,
             "discord_username": member.display_name,
             "minecraft_username": username,
-            "roles": ", ".join([role.name for role in member.roles]),
+            "roles": ", ".join(get_roles(member)),
         },
         timeout=5.0,
     )
@@ -91,9 +102,7 @@ def update_member(member: Member):
         params={
             "token": HAGRID_SECRET,
             "discord_username": member.display_name,
-            "roles": ", ".join(
-                [role.name for role in member.roles if role.name != "@everyone"]
-            ),
+            "roles": ", ".join(get_roles(member)),
         },
     )
 
@@ -110,12 +119,12 @@ async def sync_users(message: Message, force: bool = False):
     current_time = datetime.datetime.now()
 
     if (
-        last_execution_time is None
-        or (current_time - last_execution_time).total_seconds() >= 3600
-        or force
+            last_execution_time is None
+            or (current_time - last_execution_time).total_seconds() >= 3600
+            or force
     ):
         for member in message.guild.members:
-            if len(member.roles) > 0:
+            if len(get_roles(member)) > 0:
                 update_member(member)
         last_execution_time = current_time
 
