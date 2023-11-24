@@ -15,14 +15,14 @@ from data import HAGRID_COMMANDS
 from openai_utils import generate_embedding, generate_text, num_tokens_from_string
 from stats import stat
 
-os.makedirs("../shelve/", exist_ok=True)
+os.makedirs("shelve/", exist_ok=True)
 
-progress = shelve.open("../shelve/progress")
-settings = shelve.open("../shelve/settings")
+progress = shelve.open("shelve/progress")
+settings = shelve.open("shelve/settings")
 
 import sqlite3
 
-con = sqlite3.connect("../shelve/database.db")
+con = sqlite3.connect("shelve/database.db")
 
 SUPER_SMART = False
 

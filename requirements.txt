@@ -25,5 +25,5 @@ tqdm==4.65.0
 urllib3==2.0.4
 wheel==0.41.0
 yarl==1.9.2
-pipeline-ai
-async-cache
+pipeline-ai==1.0.26
+async-cache==1.1.1
