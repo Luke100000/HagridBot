@@ -28,7 +28,7 @@ intents.members = True
 
 client = discord.Client(intents=intents)
 
-WHITELISTED_GUILDS = [747184859386085380]
+WHITELISTED_GUILDS = [747184859386085380, 1008386913889177710]
 
 
 @client.event
@@ -46,7 +46,11 @@ async def on_message(message: Message):
     if message.author == client.user:
         return
 
-    if not DEBUG and message.guild.id in WHITELISTED_GUILDS and await on_smart_message(message):
+    if (
+        not DEBUG
+        and message.guild.id in WHITELISTED_GUILDS
+        and await on_smart_message(message)
+    ):
         return
 
     msg = message.content.lower()
@@ -114,10 +118,16 @@ async def on_message(message: Message):
             "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
         )
 
-    elif message.guild.id in WHITELISTED_GUILDS and "hagrid paint" in msg and len(msg) > 15:
+    elif (
+        message.guild.id in WHITELISTED_GUILDS
+        and "hagrid paint" in msg
+        and len(msg) > 15
+    ):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid paint", "").strip())
-        await message.channel.send("Here, I hope you like it!", file=File("./image.jpg"))
+        await message.channel.send(
+            "Here, I hope you like it!", file=File("./image.jpg")
+        )
 
     elif "hagrid skins" in msg:
         stat(message, "skins")

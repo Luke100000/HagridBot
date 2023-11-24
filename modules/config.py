@@ -2,12 +2,10 @@ import re
 
 from difflib import SequenceMatcher
 
-api_url = "http://snoweagle.tk/classify/"
-
 
 def load():
     c = []
-    with open("../minecraft-comes-alive.wiki/Config.md", "r") as file:
+    with open("minecraft-comes-alive.wiki/Config.md", "r") as file:
         comment = []
         config = []
         name = None
