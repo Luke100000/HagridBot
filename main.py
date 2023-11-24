@@ -6,14 +6,14 @@ import discord
 from discord import Message, File
 from dotenv import load_dotenv
 
-from config import retrieve
+from modules.config import retrieve
 from data import HAGRID_BEDROCK
-from hagrid import hagrid
-from library import library
-from paint import paint
-from role_sync import role_sync_command, sync_users
-from sirben import SIRBEN_VERSES
-from smart_hagrid import on_smart_message
+from modules.hagrid import hagrid
+from modules.library import library
+from modules.paint import paint
+from modules.role_sync import role_sync_command, sync_users
+from modules.sirben import SIRBEN_VERSES
+from modules.smart_hagrid import on_smart_message
 from stats import stat, stats
 
 load_dotenv()

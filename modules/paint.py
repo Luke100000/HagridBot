@@ -18,5 +18,5 @@ def paint(topic):
 
     url = output.result.outputs[0].value[0]["file"]["url"]
     img_data = requests.get(url).content
-    with open('image.jpg', 'wb') as handler:
+    with open('../image.jpg', 'wb') as handler:
         handler.write(img_data)
