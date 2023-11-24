@@ -126,7 +126,7 @@ async def on_message(message: Message):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid paint", "").strip())
         await message.channel.send(
-            "Here, I hope you like it!", file=File("./image.jpg")
+            "Here, I hope you like it!", file=File("image.jpg")
         )
 
     elif "hagrid skins" in msg:
