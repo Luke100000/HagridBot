@@ -140,14 +140,16 @@ async def on_message(message: Message):
         lines = ["Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:", "```md"]
         for guild in sorted(list(stats.keys())):
             lines.append("# " + guild)
+            characters += len(guild)
+
             # noinspection PyUnresolvedReferences
             for value in sorted(list(stats[guild].keys())):
                 # noinspection PyUnresolvedReferences
-                l = f"* {value}: {stats[guild][value]}"
-                lines.append(l.replace("_", " ").replace("*", " "))
-                characters += len(l)
+                line = f"* {value}: {stats[guild][value]}"
+                lines.append(line.replace("_", " ").replace("*", " "))
+                characters += len(line)
 
-            if characters > 1400:
+            if characters > 600:
                 characters = 0
                 lines.append("```")
                 await message.channel.send("\n".join(lines))
