@@ -5,7 +5,7 @@ from pipeline.cloud.pipelines import run_pipeline
 def paint(topic):
     output = run_pipeline(
         "paulh/open-journey-xl:latest",
-        f"{topic}, drawn by Hagrid Rubeus, oil painting with impasto",
+        topic,
         dict(
             guidance_scale=7.5,
             height=1024,

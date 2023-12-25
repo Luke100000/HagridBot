@@ -127,7 +127,18 @@ async def on_message(message: Message):
         and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
-        await asyncio.to_thread(paint, msg.replace("hagrid paint", "").strip())
+        await asyncio.to_thread(paint, f"{msg.replace('hagrid paint', '').strip()}, drawn by Hagrid Rubeus, oil painting with impasto")
+        await message.channel.send(
+            "Here, I hope you like it!", file=File("image.jpg")
+        )
+
+    elif (
+        message.guild.id in WHITELISTED_GUILDS
+        and "hagrid draw" in msg
+        and len(msg) > 15
+    ):
+        await message.channel.send("Alright, give me a few seconds!")
+        await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
         await message.channel.send(
             "Here, I hope you like it!", file=File("image.jpg")
         )
