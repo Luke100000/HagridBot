@@ -88,6 +88,9 @@ async def on_message(message: Message):
         stat(message, "bedrock_intensifies")
         await message.channel.send(HAGRID_BEDROCK)
 
+    elif "hagrid pain" in msg:
+        await message.channel.send("https://cdn.discordapp.com/attachments/1132232705157906433/1188842849161183232/pain.mp4?ex=659bff2e&is=65898a2e&hm=644a4a1981e8d4557c2b3488fdf333400cc9670079a3d266ec625f3cef84fd87&")
+
     elif "bedrock" in msg:
         stat(message, "bedrock_intensifies")
         await message.channel.send(
