@@ -21,7 +21,7 @@ def paint(prompt: str) -> Image:
                 width=1024,
                 height=1024,
                 steps=30,
-                use_nsfw_censor=True,
+                use_nsfw_censor=False,
                 n=1,
             ),
             prompt=prompt,
