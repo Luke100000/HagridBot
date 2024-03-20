@@ -1,22 +1,38 @@
-import requests
-from pipeline.cloud.pipelines import run_pipeline
+import os
 
+from PIL.Image import Image
+from dotenv import load_dotenv
+from horde_sdk.ai_horde_api import KNOWN_SAMPLERS
+from horde_sdk.ai_horde_api.ai_horde_clients import AIHordeAPISimpleClient
+from horde_sdk.ai_horde_api.apimodels import ImageGenerateAsyncRequest, ImageGenerationInputPayload
 
-def paint(topic):
-    output = run_pipeline(
-        "paulh/open-journey-xl:latest",
-        topic,
-        dict(
-            guidance_scale=7.5,
-            height=1024,
-            negative_prompt="worst quality, normal quality, low quality, low res, blurry, text, watermark, logo, banner, extra digits, cropped, jpeg artifacts, signature, username, error, sketch ,duplicate, ugly, monochrome, horror, geometry, mutation, disgusting",
-            num_images_per_prompt=1,
-            num_inference_steps=30,
-            width=1024,
-        )
+load_dotenv()
+
+API_KEY = os.getenv("HORDE_API_KEY")
+
+def paint(prompt: str) -> Image:
+    simple_client = AIHordeAPISimpleClient()
+
+    status_response, job_id = simple_client.image_generate_request(
+        ImageGenerateAsyncRequest(
+            apikey=API_KEY,
+            params=ImageGenerationInputPayload(
+                sampler_name=KNOWN_SAMPLERS.k_euler,
+                width=1024,
+                height=1024,
+                steps=30,
+                use_nsfw_censor=True,
+                n=1,
+            ),
+            prompt=prompt,
+            models=["AlbedoBase XL (SDXL)"],
+        ),
     )
 
-    url = output.result.outputs[0].value[0]["file"]["url"]
-    img_data = requests.get(url).content
-    with open('image.jpg', 'wb') as handler:
-        handler.write(img_data)
+    if len(status_response.generations) == 0:
+        raise Exception("No generations found")
+
+    image = simple_client.download_image_from_generation(status_response.generations[0])
+    image.save("image.webp")
+
+    return image

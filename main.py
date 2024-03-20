@@ -62,6 +62,19 @@ async def on_message(message: Message):
             f"The Book of the Sirbens, chapter {verse % 30 + 1}, verse {verse % 17 + 1}:\n> {SIRBEN_VERSES[verse]}"
         )
 
+    elif "hagrid help" in msg:
+        stat(message, "help")
+        text = "\n".join(
+            [
+                "Oi there!",
+                "* `hagrid paint <prompt>` and I'll whip up a painting for ya, in me own style.",
+                "* `hagrid draw <prompt>` if ya fancy, but if ya don't like me style, I'll ask a mate to have a go at it.",
+                "* `hey hagrid <prompt>` if ya got a question. I'll give it me best shot at answerin'.",
+                "* `hallo hagrid <prompt>` to start a chat. But I'll only be listenin' with one ear. Stick to 'Hey hagrid' for quick questions.",
+                "* `bye hagrid` if ya want me to stop jabberin'."
+            ])
+        await message.channel.send(text)
+
     elif "hagrid config" in msg:
         stat(message, "config")
         await message.channel.send(retrieve(msg.replace("config", "")))
@@ -129,7 +142,7 @@ async def on_message(message: Message):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, f"{msg.replace('hagrid paint', '').strip()}, drawn by Hagrid Rubeus, oil painting with impasto")
         await message.channel.send(
-            "Here, I hope you like it!", file=File("image.jpg")
+            "Here, I hope you like it!", file=File("image.webp")
         )
 
     elif (
@@ -140,7 +153,7 @@ async def on_message(message: Message):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
         await message.channel.send(
-            "Here, I hope you like it!", file=File("image.jpg")
+            "Here, I hope you like it!", file=File("image.webp")
         )
 
     elif "hagrid skins" in msg:
@@ -180,7 +193,7 @@ async def on_message(message: Message):
     elif "hey hagrid" in msg:
         stat(message, "hey hagrid")
         await message.channel.typing()
-        await message.channel.send(hagrid(msg))
+        await message.channel.send(await hagrid(msg))
 
     await sync_users(message)
 

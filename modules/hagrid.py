@@ -1,17 +1,11 @@
-import requests
-
-api_url = "http://snoweagle.tk/chat/"
+from openai_utils import generate_text
 
 
-def hagrid(query):
-    response = requests.get(
-        api_url,
-        {
-            "prompt": f"This is a conversation between a user and the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent.\nUser: {query}\nHagrid:",
-            "player": "User",
-            "villager": "Hagrid",
-        },
-        timeout=5.0,
+async def hagrid(prompt: str):
+    return await generate_text(
+        prompt=prompt,
+        model="gpt-4-turbo-preview",
+        system_prompt="This is a conversation between a user and the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent.",
+        temperature=0.75,
+        max_tokens=150,
     )
-
-    return response.json()["answer"].strip()
