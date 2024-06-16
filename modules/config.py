@@ -63,7 +63,5 @@ def retrieve(query):
     max_prints = 5
 
     return "\n".join([r[1] for r in results][:max_prints]) + (
-        ""
-        if len(results) <= max_prints
-        else f"\nAn {len(results) - max_prints} more."
+        "" if len(results) <= max_prints else f"\nAn {len(results) - max_prints} more."
     )

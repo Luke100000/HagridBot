@@ -1,4 +1,4 @@
-class byteFIFO:
+class ByteFIFO:
     """ byte FIFO buffer """
 
     def __init__(self):

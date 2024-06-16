@@ -110,7 +110,7 @@ def update_member(member: Member):
 last_execution_time = None
 
 
-async def sync_users(message: Message, force: bool = False):
+async def sync_users(message: Interaction, force: bool = False):
     global LINK_API_IN_USE
     if not LINK_API_IN_USE:
         return
@@ -119,9 +119,9 @@ async def sync_users(message: Message, force: bool = False):
     current_time = datetime.datetime.now()
 
     if (
-            last_execution_time is None
-            or (current_time - last_execution_time).total_seconds() >= 3600
-            or force
+        last_execution_time is None
+        or (current_time - last_execution_time).total_seconds() >= 3600
+        or force
     ):
         for member in message.guild.members:
             if len(get_roles(member)) > 0:
@@ -169,4 +169,4 @@ async def role_sync_command(interaction: Interaction):
                 # noinspection PyUnresolvedReferences
                 await interaction.response.send_message("Yer no admin, sorry")
         else:
-            await delete_user(interaction, interaction.user.id)
+            await delete_user(interaction, str(interaction.user.id))

@@ -3,6 +3,7 @@ from typing import List
 import requests
 
 api_url = "https://mca.conczin.net/v1/user/mca/"
+ENABLED = True
 
 
 def escape_markdown(t):
@@ -10,8 +11,8 @@ def escape_markdown(t):
 
 
 def library():
-    # TODO endpoint slow
-    return "Whoops, that's not available right now. Try again later!"
+    if not ENABLED:
+        return "Whoops, that's not available right now. Try again later!"
 
     response: List = requests.get(
         api_url,

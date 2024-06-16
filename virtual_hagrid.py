@@ -1,5 +1,5 @@
 import discord
-from discord import Message
+from discord import Message, Member, VoiceState
 from discord.channel import VocalGuildChannel
 from discord.ext import listening
 
@@ -45,22 +45,29 @@ class HagridAttention:
             WhisperSink(self.thinker),
             process_pool,
             after=on_listen_finish,
-            channel=channel
+            channel=channel,
         )
 
     @staticmethod
     def get_attention(channel: VocalGuildChannel, voice_client: listening.VoiceClient):
         if voice_client not in HagridAttention._attentions:
-            HagridAttention._attentions[voice_client] = HagridAttention(channel, voice_client)
+            HagridAttention._attentions[voice_client] = HagridAttention(
+                channel, voice_client
+            )
         return HagridAttention._attentions[voice_client]
 
 
 @client.event
+async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
+    if before.channel is None and after.channel is not None:
+        print(f"{member} joined voice channel {after.channel.name}")
+        print(f"Channel ID: {after.channel.id}")
+        print(f"Channel ID: {after.channel.guild.id}")
+
+
+@client.event
 async def on_message(message: Message):
-    if (
-            not config.DEBUG
-            and message.guild.id in config.WHITELISTED_GUILDS
-    ):
+    if not config.DEBUG and message.guild.id in config.WHITELISTED_GUILDS:
         return
 
     if message.content == "hagrid join":
@@ -74,7 +81,9 @@ async def on_message(message: Message):
 
             HagridAttention.get_attention(channel, voice_client)
         else:
-            await message.channel.send("Blimey, yer not in one of them voice channels, are ye?")
+            await message.channel.send(
+                "Blimey, yer not in one of them voice channels, are ye?"
+            )
 
 
 def on_listen_finish():

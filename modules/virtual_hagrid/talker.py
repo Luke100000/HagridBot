@@ -1,11 +1,10 @@
 import asyncio
 import threading
 
-from TTS.api import TTS
 from discord import opus, SpeakingState
 from discord.ext import listening
 
-from common.utils import byteFIFO
+from common.utils import ByteFIFO
 from common.whisper_online import *
 
 
@@ -16,6 +15,8 @@ class Talker:
 
     @staticmethod
     def preload():
+        from TTS.api import TTS
+
         Talker.model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
         Talker.model.to("cuda")
 
@@ -54,10 +55,12 @@ class Talker:
             text, "en", self.gpt_cond_latent, self.speaker_embedding
         )
 
-        buffer = byteFIFO()
+        buffer = ByteFIFO()
         for i, chunk in enumerate(chunks):
             audio = chunk.squeeze().unsqueeze(0).cpu().numpy()[0]
-            resampled_audio = librosa.resample(audio, orig_sr=24000, target_sr=48000, res_type="linear")
+            resampled_audio = librosa.resample(
+                audio, orig_sr=24000, target_sr=48000, res_type="linear"
+            )
             resampled_audio = np.stack((resampled_audio,) * 2, axis=1)
 
             data = (resampled_audio * 32767).astype(np.int16).tobytes()

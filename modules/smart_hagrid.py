@@ -12,7 +12,11 @@ from discord import Message
 from tqdm.auto import tqdm
 
 from common.data import HAGRID_COMMANDS
-from common.openai_utils import generate_embedding, generate_text, num_tokens_from_string
+from common.openai_utils import (
+    generate_embedding,
+    generate_text,
+    num_tokens_from_string,
+)
 from common.stats import stat
 
 os.makedirs("shelve/", exist_ok=True)
@@ -184,7 +188,7 @@ def search(guild_id: int, embedding: np.array, samples: int = 3) -> List[str]:
 
 
 def find_best_summaries(
-        guild_id: int, embedding: np.array, samples: int = 1
+    guild_id: int, embedding: np.array, samples: int = 1
 ) -> List[str]:
     """
     Searches for summaries most similar to a user query
@@ -215,8 +219,8 @@ def find_best_summaries(
 
 def drop_until(messages: List[str], max_size: int, encoding_name="gpt-3.5-turbo"):
     while (
-            len(messages) > 0
-            and num_tokens_from_string("\n".join(messages), encoding_name) > max_size
+        len(messages) > 0
+        and num_tokens_from_string("\n".join(messages), encoding_name) > max_size
     ):
         messages.pop(random.randrange(len(messages)))
     return messages
@@ -363,7 +367,7 @@ async def track(message: Message):
 
     count = 0
     async for received in message.channel.history(
-            limit=100, after=after, oldest_first=True
+        limit=100, after=after, oldest_first=True
     ):
         if received.clean_content and not received.clean_content.startswith("/hagrid"):
             set_name(received.author.id, received.author.name)
@@ -485,10 +489,10 @@ async def on_smart_message(message):
         summaries.reverse()
 
         msg = (
-                  ""
-                  if history_length == 1
-                  else "Right then, 'ere's the summary o' the last few days!\n"
-              ) + "\n\n".join(
+            ""
+            if history_length == 1
+            else "Right then, 'ere's the summary o' the last few days!\n"
+        ) + "\n\n".join(
             [
                 f'**{to_date.strftime("%Y, %d %B")}:**\n{summary}'
                 for (summary, from_date, to_date) in summaries
@@ -497,7 +501,7 @@ async def on_smart_message(message):
 
         # noinspection SpellCheckingInspection
         if len(msg) > 1500:
-            for (summary, from_date, to_date) in summaries:
+            for summary, from_date, to_date in summaries:
                 await message.channel.send(
                     f'**{to_date.strftime("%Y, %d %B")}:**\n{summary}'
                 )
@@ -513,9 +517,9 @@ async def on_smart_message(message):
         return True
 
     if "hallo hagrid" in msg or (
-            convo_id in active_conversations
-            and (datetime.datetime.now() - active_conversations[convo_id]).seconds
-            < MAX_CONVERSATION_TIME
+        convo_id in active_conversations
+        and (datetime.datetime.now() - active_conversations[convo_id]).seconds
+        < MAX_CONVERSATION_TIME
     ):
         stat(message, "hallo hagrid")
 

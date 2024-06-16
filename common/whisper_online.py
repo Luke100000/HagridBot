@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
-import io
-import math
 import sys
 import time
 from functools import lru_cache
 
 import librosa
 import numpy as np
-import soundfile as sf
 
 
 @lru_cache
@@ -44,7 +40,7 @@ class ASRBase:
 
         self.model = self.load_model(modelsize, cache_dir, model_dir)
 
-    def load_model(self, modelsize, cache_dir):
+    def load_model(self, modelsize, cache_dir, model_dir):
         raise NotImplemented("must be implemented in the child class")
 
     def transcribe(self, audio, init_prompt=""):
@@ -462,37 +458,24 @@ def asr_factory(args, logfile=sys.stderr):
     """
     Creates and configures an ASR instance based on the specified backend and arguments.
     """
-    backend = args.backend
-    if backend == "openai-api":
-        # print("Using OpenAI API.", file=logfile)
-        asr = OpenaiApiASR(lan=args.lan)
-    else:
-        if backend == "faster-whisper":
-            from faster_whisper import FasterWhisperASR
 
-            asr_cls = FasterWhisperASR
-        else:
-            from whisper_timestamped import WhisperTimestampedASR
-
-            asr_cls = WhisperTimestampedASR
-
-        # Only for FasterWhisperASR and WhisperTimestampedASR
-        size = args.model
-        t = time.time()
-        print(
-            f"Loading Whisper {size} model for {args.lan}...",
-            file=logfile,
-            end=" ",
-            flush=True,
-        )
-        asr = asr_cls(
-            modelsize=size,
-            lan=args.lan,
-            cache_dir=args.model_cache_dir,
-            model_dir=args.model_dir,
-        )
-        e = time.time()
-        print(f"done. It took {round(e - t, 2)} seconds.", file=logfile)
+    # Only for FasterWhisperASR and WhisperTimestampedASR
+    size = args.model
+    t = time.time()
+    print(
+        f"Loading Whisper {size} model for {args.lan}...",
+        file=logfile,
+        end=" ",
+        flush=True,
+    )
+    asr = FasterWhisperASR(
+        modelsize=size,
+        lan=args.lan,
+        cache_dir=args.model_cache_dir,
+        model_dir=args.model_dir,
+    )
+    e = time.time()
+    print(f"done. It took {round(e - t, 2)} seconds.", file=logfile)
 
     # Apply common configurations
     if getattr(args, "vad", False):  # Checks if VAD argument is present and True

@@ -4,11 +4,15 @@ from PIL.Image import Image
 from dotenv import load_dotenv
 from horde_sdk.ai_horde_api import KNOWN_SAMPLERS
 from horde_sdk.ai_horde_api.ai_horde_clients import AIHordeAPISimpleClient
-from horde_sdk.ai_horde_api.apimodels import ImageGenerateAsyncRequest, ImageGenerationInputPayload
+from horde_sdk.ai_horde_api.apimodels import (
+    ImageGenerateAsyncRequest,
+    ImageGenerationInputPayload,
+)
 
 load_dotenv()
 
 API_KEY = os.getenv("HORDE_API_KEY")
+
 
 def paint(prompt: str) -> Image:
     simple_client = AIHordeAPISimpleClient()
