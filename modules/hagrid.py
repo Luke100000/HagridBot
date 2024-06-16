@@ -1,4 +1,4 @@
-from openai_utils import generate_text
+from common.openai_utils import generate_text
 
 
 async def hagrid(prompt: str):

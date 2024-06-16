@@ -1,34 +1,27 @@
 import asyncio
-import os
 import random
 
 import discord
 from discord import Message, File
-from dotenv import load_dotenv
 
+from common import config
+from common.data import HAGRID_BEDROCK
 from modules.config import retrieve
-from data import HAGRID_BEDROCK
 from modules.hagrid import hagrid
 from modules.library import library
 from modules.paint import paint
 from modules.role_sync import role_sync_command, sync_users
 from modules.sirben import SIRBEN_VERSES
 from modules.smart_hagrid import on_smart_message
-from stats import stat, stats
-
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
-
-DEBUG = bool(os.getenv("HAGRID_DEBUG"))
+from common.stats import stat, stats
 
 intents = discord.Intents.default()
 
 intents.message_content = True
 intents.members = True
+intents.voice_states = True
 
 client = discord.Client(intents=intents)
-
-WHITELISTED_GUILDS = [747184859386085380, 1008386913889177710, 697239211237179414, 890529813020938280]
 
 
 @client.event
@@ -47,9 +40,9 @@ async def on_message(message: Message):
         return
 
     if (
-        not DEBUG
-        and message.guild.id in WHITELISTED_GUILDS
-        and await on_smart_message(message)
+            not config.DEBUG
+            and message.guild.id in config.WHITELISTED_GUILDS
+            and await on_smart_message(message)
     ):
         return
 
@@ -102,7 +95,8 @@ async def on_message(message: Message):
         await message.channel.send(HAGRID_BEDROCK)
 
     elif "hagrid in pain" in msg:
-        await message.channel.send("https://cdn.discordapp.com/attachments/1132232705157906433/1188842849161183232/pain.mp4?ex=659bff2e&is=65898a2e&hm=644a4a1981e8d4557c2b3488fdf333400cc9670079a3d266ec625f3cef84fd87&")
+        await message.channel.send(
+            "https://cdn.discordapp.com/attachments/1132232705157906433/1188842849161183232/pain.mp4?ex=659bff2e&is=65898a2e&hm=644a4a1981e8d4557c2b3488fdf333400cc9670079a3d266ec625f3cef84fd87&")
 
     elif "bedrock" in msg:
         stat(message, "bedrock_intensifies")
@@ -119,11 +113,11 @@ async def on_message(message: Message):
     elif len(message.attachments) > 0:
         for attachment in message.attachments:
             if (
-                attachment.content_type is not None
-                and attachment.content_type.startswith("text/plain")
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith("text/plain")
             ):
                 if "Mod ID: 'architectury', Requested by: 'mca', Expected range: '" in (
-                    await attachment.read()
+                        await attachment.read()
                 ).decode("utf-8"):
                     await message.channel.send(
                         "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
@@ -135,20 +129,21 @@ async def on_message(message: Message):
         )
 
     elif (
-        message.guild.id in WHITELISTED_GUILDS
-        and "hagrid paint" in msg
-        and len(msg) > 15
+            message.guild.id in config.WHITELISTED_GUILDS
+            and "hagrid paint" in msg
+            and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
-        await asyncio.to_thread(paint, f"{msg.replace('hagrid paint', '').strip()}, drawn by Hagrid Rubeus, oil painting with impasto")
+        await asyncio.to_thread(paint,
+                                f"{msg.replace('hagrid paint', '').strip()}, drawn by Hagrid Rubeus, oil painting with impasto")
         await message.channel.send(
             "Here, I hope you like it!", file=File("image.webp")
         )
 
     elif (
-        message.guild.id in WHITELISTED_GUILDS
-        and "hagrid draw" in msg
-        and len(msg) > 15
+            message.guild.id in config.WHITELISTED_GUILDS
+            and "hagrid draw" in msg
+            and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
@@ -162,7 +157,7 @@ async def on_message(message: Message):
             f"Oi! Take a gander at this 'ere: https://github.com/Luke100000/minecraft-comes-alive/wiki/Custom-Skins"
         )
 
-    elif message.guild.id in WHITELISTED_GUILDS and "hagrid usage stats" in msg:
+    elif message.guild.id in config.WHITELISTED_GUILDS and "hagrid usage stats" in msg:
         characters = 80
         lines = ["Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:", "```md"]
         for guild in sorted(list(stats.keys())):
@@ -198,4 +193,5 @@ async def on_message(message: Message):
     await sync_users(message)
 
 
-client.run(TOKEN)
+if __name__ == "__main__":
+    client.run(config.TOKEN)

@@ -11,9 +11,9 @@ from cache import AsyncLRU
 from discord import Message
 from tqdm.auto import tqdm
 
-from data import HAGRID_COMMANDS
-from openai_utils import generate_embedding, generate_text, num_tokens_from_string
-from stats import stat
+from common.data import HAGRID_COMMANDS
+from common.openai_utils import generate_embedding, generate_text, num_tokens_from_string
+from common.stats import stat
 
 os.makedirs("shelve/", exist_ok=True)
 

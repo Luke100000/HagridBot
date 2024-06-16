@@ -2,7 +2,7 @@ from typing import List
 
 import requests
 
-api_url = "https://vps-zap359452-1.zap-srv.com:8000/v1/user/mca/"
+api_url = "https://mca.conczin.net/v1/user/mca/"
 
 
 def escape_markdown(t):
@@ -10,6 +10,9 @@ def escape_markdown(t):
 
 
 def library():
+    # TODO endpoint slow
+    return "Whoops, that's not available right now. Try again later!"
+
     response: List = requests.get(
         api_url,
         timeout=5.0,
