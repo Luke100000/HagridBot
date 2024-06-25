@@ -1,8 +1,8 @@
 import os
 import shelve
 
-os.makedirs("../shelve/", exist_ok=True)
-stats = shelve.open("../shelve/stats")
+os.makedirs("shelve/", exist_ok=True)
+stats = shelve.open("shelve/stats")
 
 
 def stat(message, typ):
