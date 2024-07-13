@@ -2,7 +2,7 @@ import datetime
 import os
 
 import requests
-from discord import Interaction, Member, Message
+from discord import Interaction, Member, Guild
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -110,7 +110,7 @@ def update_member(member: Member):
 last_execution_time = None
 
 
-async def sync_users(message: Interaction, force: bool = False):
+async def sync_users(guild: Guild, force: bool = False):
     global LINK_API_IN_USE
     if not LINK_API_IN_USE:
         return
@@ -123,7 +123,7 @@ async def sync_users(message: Interaction, force: bool = False):
         or (current_time - last_execution_time).total_seconds() >= 3600
         or force
     ):
-        for member in message.guild.members:
+        for member in guild.members:
             if len(get_roles(member)) > 0:
                 update_member(member)
         last_execution_time = current_time
@@ -131,7 +131,7 @@ async def sync_users(message: Interaction, force: bool = False):
 
 async def role_sync_command(interaction: Interaction):
     if interaction.data["name"] == "sync":
-        await sync_users(interaction, True)
+        await sync_users(interaction.guild, True)
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message("Done!")
 
@@ -139,6 +139,7 @@ async def role_sync_command(interaction: Interaction):
         global LINK_API_IN_USE
         LINK_API_IN_USE = True
 
+        # noinspection PyTypeChecker
         username = interaction.data["options"][0]["value"]
 
         response = create_member(interaction.user, username)
@@ -163,6 +164,7 @@ async def role_sync_command(interaction: Interaction):
     if interaction.data["name"] == "unlink":
         if "options" in interaction.data:
             if interaction.user.guild_permissions.administrator:
+                # noinspection PyTypeChecker
                 username = interaction.data["options"][0]["value"]
                 await delete_user(interaction, username)
             else:

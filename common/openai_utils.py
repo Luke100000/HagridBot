@@ -1,26 +1,15 @@
 import os
 from typing import Optional, Union, List
 
-import numpy as np
-import openai as openai
-import tiktoken
-from cache import AsyncLRU
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
 load_dotenv()
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
-
-@AsyncLRU(256)
-async def generate_embedding(text: str) -> np.array:
-    text = text.replace("\n", " ")
-    return np.asarray(
-        (await openai.Embedding.acreate(input=[text], model="text-embedding-ada-002"))[
-            "data"
-        ][0]["embedding"],
-        dtype=np.float32,
-    )
+client = AsyncOpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY"),
+)
 
 
 async def generate_text(
@@ -48,11 +37,11 @@ async def generate_text(
     :return List[str]: _description_
     """
     messages = [
-        {"role": "system", "content": f"{system_prompt}"},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
     ]
 
-    response = await openai.ChatCompletion.acreate(
+    response = await client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=temperature,
@@ -67,9 +56,3 @@ async def generate_text(
         choice.message["content"].strip() for choice in response["choices"]
     ]
     return generated_texts[0] if n == 1 else generated_texts
-
-
-def num_tokens_from_string(string: str, encoding_name: str) -> int:
-    encoding = tiktoken.encoding_for_model(encoding_name)
-    num_tokens = len(encoding.encode(string))
-    return num_tokens

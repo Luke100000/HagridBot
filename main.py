@@ -2,12 +2,12 @@ import asyncio
 import random
 
 import discord
-from discord import Message, File
+from discord import Message, File, Interaction
 
 from common import config
 from common.data import HAGRID_BEDROCK
+from common.openai_utils import generate_text
 from modules.config import retrieve
-from modules.hagrid import hagrid
 from modules.library import library
 from modules.paint import paint
 from modules.role_sync import role_sync_command, sync_users
@@ -30,20 +30,20 @@ async def on_ready():
 
 
 @client.event
-async def on_interaction(interaction):
+async def on_interaction(interaction: Interaction):
     await role_sync_command(interaction)
 
 
+# noinspection SpellCheckingInspection
 @client.event
 async def on_message(message: Message):
     if message.author == client.user:
         return
 
-    if (
-        not config.DEBUG
-        and message.guild.id in config.WHITELISTED_GUILDS
-        and await on_smart_message(message)
-    ):
+    whitelisted = message.guild.id in config.WHITELISTED_GUILDS
+
+    # More smart and expensive stuff
+    if whitelisted and await on_smart_message(message):
         return
 
     msg = message.content.lower()
@@ -157,7 +157,7 @@ async def on_message(message: Message):
             f"Oi! Take a gander at this 'ere: https://github.com/Luke100000/minecraft-comes-alive/wiki/Custom-Skins"
         )
 
-    elif message.guild.id in config.WHITELISTED_GUILDS and "hagrid usage stats" in msg:
+    elif whitelisted and "hagrid usage stats" in msg:
         characters = 80
         lines = ["Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:", "```md"]
         for guild in sorted(list(stats.keys())):
@@ -188,9 +188,17 @@ async def on_message(message: Message):
     elif "hey hagrid" in msg:
         stat(message, "hey hagrid")
         await message.channel.typing()
-        await message.channel.send(await hagrid(msg))
+        await message.channel.send(
+            await generate_text(
+                prompt=message.content,
+                model="gpt-4o",
+                system_prompt="This is a conversation between a user and the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent.",
+                temperature=0.75,
+                max_tokens=150,
+            )
+        )
 
-    await sync_users(message)
+    await sync_users(message.guild)
 
 
 if __name__ == "__main__":
