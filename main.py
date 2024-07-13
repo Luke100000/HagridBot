@@ -40,9 +40,9 @@ async def on_message(message: Message):
         return
 
     if (
-            not config.DEBUG
-            and message.guild.id in config.WHITELISTED_GUILDS
-            and await on_smart_message(message)
+        not config.DEBUG
+        and message.guild.id in config.WHITELISTED_GUILDS
+        and await on_smart_message(message)
     ):
         return
 
@@ -64,8 +64,9 @@ async def on_message(message: Message):
                 "* `hagrid draw <prompt>` if ya fancy, but if ya don't like me style, I'll ask a mate to have a go at it.",
                 "* `hey hagrid <prompt>` if ya got a question. I'll give it me best shot at answerin'.",
                 "* `hallo hagrid <prompt>` to start a chat. But I'll only be listenin' with one ear. Stick to 'Hey hagrid' for quick questions.",
-                "* `bye hagrid` if ya want me to stop jabberin'."
-            ])
+                "* `bye hagrid` if ya want me to stop jabberin'.",
+            ]
+        )
         await message.channel.send(text)
 
     elif "hagrid config" in msg:
@@ -96,7 +97,8 @@ async def on_message(message: Message):
 
     elif "hagrid in pain" in msg:
         await message.channel.send(
-            "https://cdn.discordapp.com/attachments/1132232705157906433/1188842849161183232/pain.mp4?ex=659bff2e&is=65898a2e&hm=644a4a1981e8d4557c2b3488fdf333400cc9670079a3d266ec625f3cef84fd87&")
+            "https://cdn.discordapp.com/attachments/1132232705157906433/1188842849161183232/pain.mp4?ex=659bff2e&is=65898a2e&hm=644a4a1981e8d4557c2b3488fdf333400cc9670079a3d266ec625f3cef84fd87&"
+        )
 
     elif "bedrock" in msg:
         stat(message, "bedrock_intensifies")
@@ -113,11 +115,11 @@ async def on_message(message: Message):
     elif len(message.attachments) > 0:
         for attachment in message.attachments:
             if (
-                    attachment.content_type is not None
-                    and attachment.content_type.startswith("text/plain")
+                attachment.content_type is not None
+                and attachment.content_type.startswith("text/plain")
             ):
                 if "Mod ID: 'architectury', Requested by: 'mca', Expected range: '" in (
-                        await attachment.read()
+                    await attachment.read()
                 ).decode("utf-8"):
                     await message.channel.send(
                         "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
@@ -129,27 +131,25 @@ async def on_message(message: Message):
         )
 
     elif (
-            message.guild.id in config.WHITELISTED_GUILDS
-            and "hagrid paint" in msg
-            and len(msg) > 15
+        message.guild.id in config.WHITELISTED_GUILDS
+        and "hagrid paint" in msg
+        and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
-        await asyncio.to_thread(paint,
-                                f"{msg.replace('hagrid paint', '').strip()}, drawn by Hagrid Rubeus, oil painting with impasto")
-        await message.channel.send(
-            "Here, I hope you like it!", file=File("image.webp")
+        await asyncio.to_thread(
+            paint,
+            f"{msg.replace('hagrid paint', '').strip()}, oil painting with impasto",
         )
+        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
 
     elif (
-            message.guild.id in config.WHITELISTED_GUILDS
-            and "hagrid draw" in msg
-            and len(msg) > 15
+        message.guild.id in config.WHITELISTED_GUILDS
+        and "hagrid draw" in msg
+        and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
-        await message.channel.send(
-            "Here, I hope you like it!", file=File("image.webp")
-        )
+        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
 
     elif "hagrid skins" in msg:
         stat(message, "skins")
