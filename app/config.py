@@ -19,6 +19,7 @@ def get_data_path(path: str) -> Path:
 
 
 class Settings(BaseModel):
+    triggers: dict[str, str] = {}
     whitelisted_guilds: list[int] = []
 
 
@@ -27,7 +28,7 @@ settings_path = get_data_path("settings.json")
 
 def load_config() -> Settings:
     if settings_path.exists():
-        return Settings.from_json(settings_path.read_text())
+        return Settings.model_validate_json(settings_path.read_text())
     else:
         settings_path.parent.mkdir(parents=True, exist_ok=True)
         settings_path.write_text(Settings().model_dump_json(indent=4))

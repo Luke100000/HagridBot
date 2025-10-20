@@ -1,69 +1,45 @@
-import re
+import requests
+from cachetools import cached, TTLCache
 
-from difflib import SequenceMatcher
-
-
-def load():
-    if True:
-        return
-    c = []
-    with open("minecraft-comes-alive.wiki/Config.md", "r") as file:
-        comment = []
-        config = []
-        name = None
-        for line in file:
-            line = line
-            if line.startswith("//"):
-                # start of comment
-                comment.append(line.strip())
-            elif line.startswith('"'):
-                # if the last config didn't finished, let's share the comments
-                if name is not None:
-                    c.append((name, "\n".join(comment), "\n".join(config)))
-                    config = []
-
-                # start of config
-                name = line[1 : line.find('"', 1)]
-                config.append(re.sub(r"[\n\r]+", "", line))
-            elif (len(line.strip()) == 0 or line == "```") and name is not None:
-                # end of config
-                c.append((name, "\n".join(comment), "\n".join(config)))
-                name = None
-                config = []
-                comment = []
-            else:
-                config.append(re.sub(r"[\n\r]+", "", line))
-    return c
+from app.llm_utils import generate_text
 
 
-configs = load()
+@cached(TTLCache(maxsize=1, ttl=24 * 3600))
+def download_config(
+    config_url: str = "https://raw.githubusercontent.com/Luke100000/minecraft-comes-alive/refs/heads/1.21.1/common/src/main/java/net/conczin/mca/Config.java",
+) -> str:
+    resp = requests.get(config_url)
+    text = resp.text.replace("    ", "")
+    start = text.find("//////////////")
+    end = text.find("public static Config getInstance")
+    return text[start:end] if start != -1 and end != -1 else text
 
 
-def retrieve(query):
-    results = []
-    for name, comment, config in configs:
-        matches = 0
-        for word in re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower().split():
-            for search in query.lower().split():
-                sim = SequenceMatcher(None, word, re.sub(r"\W+", "", search)).ratio()
-                if sim > 0.75:
-                    matches += 1
+PROMPT = """
+You have extensive knowledge about the Minecraft Comes Alive mod and its configuration options.
+Given the config file below, answer the user's question in character as friendly Hagrid with accent, but in an accurate, concise and helpful manner.
+Use markdown syntax, and remember that the config itself is configured within a JSON file.
 
-        if matches > 0:
-            results.append(
-                (
-                    matches,
-                    "```java\n" + (comment + "\n" + config) + "\n```",
-                )
-            )
+{config}
 
-    if len(results) == 0:
-        return "Didn't find anythin'."
+User's question: {query}
 
-    results = sorted(results, key=lambda v: v[0], reverse=True)
+For example, answer like:
+Short sentence and explanation of config in Hagrids style:
+```json
+"exampleConfigOption": true,
+```
 
-    max_prints = 5
+Or if the setting is simpler, it can be like `configOption` with a short explanation.
+""".strip()
 
-    return "\n".join([r[1] for r in results][:max_prints]) + (
-        "" if len(results) <= max_prints else f"\nAn {len(results) - max_prints} more."
+
+async def retrieve(query):
+    return await generate_text(
+        prompt=PROMPT.format(
+            config=download_config(),
+            query=query,
+        ),
+        temperature=0.0,
+        max_tokens=256,
     )

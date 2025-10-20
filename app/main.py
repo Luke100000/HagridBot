@@ -5,13 +5,10 @@ import discord
 from discord import File, Message
 
 from app import config
-from app.data import HAGRID_BEDROCK
 from app.modules.config import retrieve
-from app.modules.library import library
 from app.modules.paint import paint
 from app.modules.sirben import SIRBEN_VERSES
-from app.modules.smart_hagrid import on_smart_message
-from app.openai_utils import generate_text
+from app.modules.talk import speak
 from app.stats import stat, stats
 
 intents = discord.Intents.default()
@@ -28,7 +25,6 @@ async def on_ready():
     print(f"{client.user} has connected to Discord!")
 
 
-# noinspection SpellCheckingInspection
 @client.event
 async def on_message(message: Message):
     if message.author == client.user:
@@ -36,11 +32,19 @@ async def on_message(message: Message):
 
     whitelisted = message.guild.id in config.settings.whitelisted_guilds
 
-    # More smart and expensive stuff
-    if whitelisted and await on_smart_message(message):
-        return
+    msg = message.content.lower().replace(",", "")
 
-    msg = message.content.lower()
+    for trigger, response in config.settings.triggers.items():
+        for variant in trigger.split("|"):
+            all_matched = True
+            for word in variant.split("&"):
+                if word not in msg:
+                    all_matched = False
+                    break
+            if all_matched:
+                await message.channel.send(response)
+                stat(message, f"trigger: {trigger}")
+                return
 
     if "sirben" in msg:
         stat(message, "sirben")
@@ -57,54 +61,14 @@ async def on_message(message: Message):
                 "* `hagrid paint <prompt>` and I'll whip up a painting for ya, in me own style.",
                 "* `hagrid draw <prompt>` if ya fancy, but if ya don't like me style, I'll ask a mate to have a go at it.",
                 "* `hey hagrid <prompt>` if ya got a question. I'll give it me best shot at answerin'.",
-                "* `hallo hagrid <prompt>` to start a chat. But I'll only be listenin' with one ear. Stick to 'Hey hagrid' for quick questions.",
-                "* `bye hagrid` if ya want me to stop jabberin'.",
             ]
         )
         await message.channel.send(text)
 
     elif "hagrid config" in msg:
         stat(message, "config")
-        await message.channel.send(retrieve(msg.replace("config", "")))
-
-    elif "polygamy" in msg:
-        stat(message, "polygamy")
-        await message.channel.send(
-            f"Polygamy deconfirmed part {random.randrange(1000) + 50}"
-        )
-
-    elif "port" in msg and "1.12" in msg:
-        stat(message, "1.12")
-        await message.channel.send(
-            "Ah, blimey! This MCA 1.12.2 port, it's a right headache, I'm tellin' ya! All them technical tweaks and compatibility fuss, it's a right bunch of unnecessary work, ain't it?"
-        )
-
-    elif "league" in msg:
-        stat(message, "league")
-        await message.channel.send(
-            "Blimey, take a gander at this fella... We should ban 'im, we should."
-        )
-
-    elif "bedrock intensifies" in msg:
-        stat(message, "bedrock_intensifies")
-        await message.channel.send(HAGRID_BEDROCK)
-
-    elif "hagrid in pain" in msg:
-        await message.channel.send(
-            "https://cdn.discordapp.com/attachments/1132232705157906433/1188842849161183232/pain.mp4?ex=659bff2e&is=65898a2e&hm=644a4a1981e8d4557c2b3488fdf333400cc9670079a3d266ec625f3cef84fd87&"
-        )
-
-    elif "bedrock" in msg:
-        stat(message, "bedrock_intensifies")
-        await message.channel.send(
-            """By the stars above, don't you see? Minecraft Java and Bedrock are like two entirely different worlds – their architectures are as distant as a Thestral and a Niffler! It's a maddening notion to even think about mixin' 'em, like tryin' to merge dragons and pixies!"""
-        )
-
-    elif "hagrid log" in msg:
-        stat(message, "log")
-        await message.channel.send(
-            "Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
-        )
+        await message.channel.typing()
+        await message.channel.send(await retrieve(msg.replace("config", "").strip()))
 
     elif len(message.attachments) > 0:
         for attachment in message.attachments:
@@ -119,37 +83,19 @@ async def on_message(message: Message):
                         "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
                     )
 
-    elif "error 1" in msg or "error code 1" in msg or "exit code 1" in msg:
-        await message.channel.send(
-            "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
-        )
-
     elif (
         message.guild.id in config.settings.whitelisted_guilds
-        and "hagrid paint" in msg
+        and ("hagrid paint" in msg or "hagrid draw" in msg)
         and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
-        await asyncio.to_thread(
+        path = await asyncio.to_thread(
             paint,
-            f"{msg.replace('hagrid paint', '').strip()}, oil painting with impasto",
+            f"{msg.replace('hagrid paint', '').strip()}"
+            + (", oil painting with impasto" if "paint" in msg else "")
+            + " masterpiece, highly detailed, 8k",
         )
-        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
-
-    elif (
-        message.guild.id in config.settings.whitelisted_guilds
-        and "hagrid draw" in msg
-        and len(msg) > 15
-    ):
-        await message.channel.send("Alright, give me a few seconds!")
-        await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
-        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
-
-    elif "hagrid skins" in msg:
-        stat(message, "skins")
-        await message.channel.send(
-            "Oi! Take a gander at this 'ere: https://github.com/Luke100000/minecraft-comes-alive/wiki/Custom-Skins"
-        )
+        await message.channel.send("Here, I hope you like it!", file=File(path))
 
     elif whitelisted and "hagrid usage stats" in msg:
         characters = 80
@@ -179,21 +125,15 @@ async def on_message(message: Message):
 
         await message.channel.send("\n".join(lines))
 
-    elif "hagrid skin library" in msg:
-        await message.channel.send(library())
-
-    elif "hey hagrid" in msg:
+    elif (
+        "hey hagrid" in msg
+        or "hi hagrid" in msg
+        or "hello hagrid" in msg
+        or "hallo hagrid" in msg
+    ):
         stat(message, "hey hagrid")
         await message.channel.typing()
-        await message.channel.send(
-            await generate_text(
-                prompt=message.content,
-                model="gpt-4o",
-                system_prompt="This is a conversation between a user and the loyal, friendly, and softhearted Rubeus Hagrid with a thick west country accent.",
-                temperature=0.75,
-                max_tokens=150,
-            )
-        )
+        await message.channel.send(await speak(message))
 
 
 if __name__ == "__main__":

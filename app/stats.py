@@ -1,8 +1,8 @@
-import os
 import shelve
 
-os.makedirs("shelve/", exist_ok=True)
-stats = shelve.open("shelve/stats")
+from app.config import get_data_path
+
+stats = shelve.open(get_data_path("stats"))
 
 
 def stat(message, typ):

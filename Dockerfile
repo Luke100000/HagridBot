@@ -22,10 +22,16 @@ COPY pyproject.toml uv.lock /app/
 COPY app/ /app/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --all-groups --no-group dev
+    uv sync --locked
 
 # Final stage
 FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 
 # Create a non-root user
 RUN groupadd -r app && useradd -r -g app app
@@ -36,7 +42,8 @@ COPY --from=builder --chown=app:app /app /app
 
 # Environment
 ENV PATH="/app/.venv/bin:$PATH"
-WORKDIR /app
+ENV PYTHONPATH="/"
+WORKDIR /
 
 # Switch to non-root user
 USER app
