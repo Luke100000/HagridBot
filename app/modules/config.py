@@ -4,6 +4,8 @@ from difflib import SequenceMatcher
 
 
 def load():
+    if True:
+        return
     c = []
     with open("minecraft-comes-alive.wiki/Config.md", "r") as file:
         comment = []

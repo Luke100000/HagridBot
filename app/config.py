@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -15,3 +16,9 @@ WHITELISTED_GUILDS = [
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 DEBUG = bool(os.getenv("HAGRID_DEBUG"))
+
+root = Path(__file__).parent.parent
+
+
+def get_data_path(path: str) -> Path:
+    return root / "data" / path

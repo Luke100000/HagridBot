@@ -1,0 +1,8 @@
+services:
+  app:
+    build: .
+    image: hagridbot:latest
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env

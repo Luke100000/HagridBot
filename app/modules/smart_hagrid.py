@@ -8,15 +8,13 @@ import sqlite3
 from typing import List
 
 import aiohttp
-import pytz as pytz
 from cache import AsyncLRU
 from discord import Message, File
-from groq.types.chat import ChatCompletionToolParam
 
-from common.data import HAGRID_COMMANDS
-from common.openai_utils import generate_text
-from common.stats import stat
-from modules.paint import paint
+from app.data import HAGRID_COMMANDS
+from app.openai_utils import generate_text
+from app.stats import stat
+from app.modules.paint import paint
 
 os.makedirs("shelve/", exist_ok=True)
 
@@ -27,7 +25,7 @@ settings = shelve.open("shelve/settings")
 con = sqlite3.connect("shelve/database.db")
 
 FIXED_HISTORY_N = 2
-MAX_HISTORY_N = 5
+MAX_HISTORY_N = 10
 HISTORY_LENGTH = 2048
 MAX_CONVERSATION_TIME = 100
 
@@ -159,7 +157,6 @@ async def get_summary(guild_id, channel_id, offset: int = 0, max_length: int = 1
             prompt,
             system_prompt=system_prompt,
             max_tokens=256,
-            model="gpt-3.5-turbo",
             temperature=0.25,
         )
 
@@ -231,7 +228,15 @@ async def track(message: Message):
     return count
 
 
-def simple_tool(name, description) -> ChatCompletionToolParam:
+async def get_last_messages(message: Message, limit: int = 10) -> list:
+    messages = []
+    async for received in message.channel.history(limit=limit):
+        if received.clean_content and not received.clean_content.startswith("/hagrid"):
+            messages.append((received.author.name, received.clean_content))
+    return messages
+
+
+def simple_tool(name, description):
     return {
         "type": "function",
         "function": {
@@ -262,8 +267,94 @@ async def create_chat_completion(model: str, messages: list, tools: list):
 
 
 # noinspection SpellCheckingInspection
+async def speak(message: Message):
+    msg = message.clean_content.lower().replace(",", "")
+
+    # Use the last few messages from the channel as context
+    messages = [
+        {
+            "role": "assistant" if "hagrid" in name.lower() else "user",
+            "content": content.replace("\n", " "),
+            "name": name.replace("HagridBot", "Hagrid"),
+        }
+        for name, content in await get_last_messages(message, MAX_HISTORY_N)
+    ]
+
+    messages.reverse()
+
+    glossaries = []
+    if "mca" in msg:
+        glossaries.append("mca_wiki")
+    elif "minecraft" in msg:
+        glossaries.append("minecraft_wiki")
+    else:
+        glossaries.append("mca_wiki_fast")
+    glossaries = ",".join(glossaries)
+
+    # System prompt and settings
+    system_prompt = "You can use markdown formatting when required. Link the source of relevant phrases from the knowledge base when appopiate. You are in a Discord server dedicated to the Minecraft mod MCA (Minecraft Comes Alive). Avoid emojis."
+    messages.insert(
+        0,
+        {
+            "role": "system",
+            "content": f"[shared_memory:true][world_id:{message.guild.id}-{message.channel.id}][character_id:hagrid][glossaries:{glossaries}]{system_prompt}",
+        },
+    )
+
+    tools = []
+    """
+    if "hallo hagrid" not in msg:
+        tools.append(
+            simple_tool(
+                "quit",
+                "Stop the conversation, when the user is no longer talking to you.",
+            )
+        )
+
+    tools.append(
+        simple_tool(
+            "paint",
+            "Paint a beautiful picture based on the users request, if the user asks for a drawing.",
+        )
+    )
+    """
+
+    # noinspection PyBroadException
+    try:
+        response = await create_chat_completion("gpt-4o", messages, tools)
+    except Exception:
+        await message.channel.send(
+            f"Blimey! Left the stove on, and now me hut's gone up in flames!"
+        )
+        return True
+
+    # Process called tools
+    response = response["choices"][0]["message"]
+    for tool in response["tool_calls"]:
+        if tool["function"]["name"] == "paint":
+            await message.channel.send("Alright, give me a few seconds!")
+            await asyncio.to_thread(
+                paint, message.content.replace("hallo hagrid", "").strip()
+            )
+            await message.channel.send(
+                "Here, I hope you like it!", file=File("image.webp")
+            )
+        elif tool["function"]["name"] == "quit":
+            del active_conversations[get_conv_id(message)]
+            await message.add_reaction("👋")
+
+    # Send the response
+    if response["content"]:
+        generated_text = response["content"].strip()
+        await message.channel.send(generated_text)
+
+
+def get_conv_id(message: Message) -> str:
+    return f"{message.author.id}_{message.channel.id}"
+
+
 async def on_smart_message(message: Message):
-    msg = message.clean_content.lower()
+    msg = message.clean_content.lower().replace(",", "")
 
     # Basic commands
     if msg.startswith("/hagrid"):
@@ -340,13 +431,13 @@ async def on_smart_message(message: Message):
 
         return True
 
-    convo_id = f"{message.author.id}_{message.channel.id}"
+    convo_id = get_conv_id(message)
 
     if msg == "bye hagrid" and convo_id in active_conversations:
         del active_conversations[convo_id]
         return True
 
-    if "hallo hagrid" in msg or (
+    if "holla hagrid" in msg or (
         convo_id in active_conversations
         and (datetime.datetime.now() - active_conversations[convo_id]).seconds
         < MAX_CONVERSATION_TIME
@@ -357,86 +448,6 @@ async def on_smart_message(message: Message):
 
         active_conversations[convo_id] = datetime.datetime.now()
 
-        # Use the last few messages from the channel as context
-        messages = con.execute(
-            """
-            SELECT content, names.name as username
-            FROM messages
-            LEFT JOIN names ON names.id=messages.author
-            WHERE channel=?
-            ORDER BY date DESC 
-            LIMIT ?
-            """,
-            (message.channel.id, MAX_HISTORY_N),
-        ).fetchall()
-
-        # Convert to OpenaAI messages
-        messages = [
-            {
-                "role": "assistant" if "hagrid" in name.lower() else "user",
-                "content": content.replace("\n", " "),
-                "name": name.replace("HagridBot", "Hagrid"),
-            }
-            for content, name in messages
-        ]
-
-        messages.reverse()
-
-        # System prompt and settings
-        system_prompt = "You can use markdown formatting when required. Link the source of relevant phrases from the knowledge base when appopiate. You are in a Discord server dedicated to the Minecraft mod MCA (Minecraft Comes Alive)."
-        messages.insert(
-            0,
-            {
-                "role": "system",
-                "content": f"[shared_memory:true][world_id:{message.guild.id}][character_id:hagrid]{system_prompt}",
-            },
-        )
-
-        tools = []
-        """
-        if "hallo hagrid" not in msg:
-            tools.append(
-                simple_tool(
-                    "quit",
-                    "Stop the conversation, when the user is no longer talking to you.",
-                )
-            )
-
-        tools.append(
-            simple_tool(
-                "paint",
-                "Paint a beautiful picture based on the users request, if the user asks for a drawing.",
-            )
-        )
-        """
-
-        # noinspection PyBroadException
-        try:
-            response = await create_chat_completion("gpt-4o", messages, tools)
-        except Exception:
-            await message.channel.send(
-                f"Blimey! Left the stove on, and now me hut's gone up in flames!"
-            )
-            return True
-
-        # Process called tools
-        response = response["choices"][0]["message"]
-        for tool in response["tool_calls"]:
-            if tool["function"]["name"] == "paint":
-                await message.channel.send("Alright, give me a few seconds!")
-                await asyncio.to_thread(
-                    paint, message.content.replace("hallo hagrid", "").strip()
-                )
-                await message.channel.send(
-                    "Here, I hope you like it!", file=File("image.webp")
-                )
-            elif tool["function"]["name"] == "quit":
-                del active_conversations[convo_id]
-                await message.add_reaction("👋")
-
-        # Send the response
-        if response["content"]:
-            generated_text = response["content"].strip()
-            await message.channel.send(generated_text)
+        await speak(message)
 
         return True

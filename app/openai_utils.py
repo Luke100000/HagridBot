@@ -14,7 +14,7 @@ client = AsyncOpenAI(
 
 async def generate_text(
     prompt: str,
-    model: str = "gpt-3.5-turbo",
+    model: str = "gpt-4.1-mini",
     system_prompt: str = "You are a helpful assistant.",
     temperature: float = 0.5,
     max_tokens: int = 256,
@@ -23,19 +23,6 @@ async def generate_text(
     presence_penalty: float = 0,
     frequency_penalty: float = 0.1,
 ) -> Union[List[str], str]:
-    """
-    chat_generate_text - Generates text using the OpenAI API.
-    :param str prompt: prompt for the model
-    :param str model: model to use, defaults to "gpt-3.5-turbo"
-    :param str system_prompt: initial prompt for the model, defaults to "You are a helpful assistant."
-    :param float temperature: _description_, defaults to 0.5
-    :param int max_tokens: _description_, defaults to 256
-    :param int n: _description_, defaults to 1
-    :param Optional[Union[str, list]] stop: _description_, defaults to None
-    :param float presence_penalty: _description_, defaults to 0
-    :param float frequency_penalty: _description_, defaults to 0.1
-    :return List[str]: _description_
-    """
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
@@ -52,7 +39,5 @@ async def generate_text(
         frequency_penalty=frequency_penalty,
     )
 
-    generated_texts = [
-        choice.message["content"].strip() for choice in response["choices"]
-    ]
+    generated_texts = [choice.message.content.strip() for choice in response.choices]
     return generated_texts[0] if n == 1 else generated_texts

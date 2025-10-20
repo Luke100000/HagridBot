@@ -2,18 +2,17 @@ import asyncio
 import random
 
 import discord
-from discord import Message, File, Interaction
+from discord import Message, File
 
-from common import config
-from common.data import HAGRID_BEDROCK
-from common.openai_utils import generate_text
-from modules.config import retrieve
-from modules.library import library
-from modules.paint import paint
-from modules.role_sync import role_sync_command, sync_users
-from modules.sirben import SIRBEN_VERSES
-from modules.smart_hagrid import on_smart_message
-from common.stats import stat, stats
+from app import config
+from app.data import HAGRID_BEDROCK
+from app.openai_utils import generate_text
+from app.modules.config import retrieve
+from app.modules.library import library
+from app.modules.paint import paint
+from app.modules.sirben import SIRBEN_VERSES
+from app.modules.smart_hagrid import on_smart_message
+from app.stats import stat, stats
 
 intents = discord.Intents.default()
 
@@ -29,9 +28,6 @@ async def on_ready():
     print(f"{client.user} has connected to Discord!")
 
 
-@client.event
-async def on_interaction(interaction: Interaction):
-    await role_sync_command(interaction)
 
 
 # noinspection SpellCheckingInspection
@@ -118,9 +114,10 @@ async def on_message(message: Message):
                 attachment.content_type is not None
                 and attachment.content_type.startswith("text/plain")
             ):
-                if "Mod ID: 'architectury', Requested by: 'mca', Expected range: '" in (
-                    await attachment.read()
-                ).decode("utf-8"):
+                if (
+                    "Mod ID: 'architectury', Requested by: 'mca', Expected range: '"
+                    in (await attachment.read()).decode("utf-8")
+                ):
                     await message.channel.send(
                         "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
                     )
@@ -140,7 +137,9 @@ async def on_message(message: Message):
             paint,
             f"{msg.replace('hagrid paint', '').strip()}, oil painting with impasto",
         )
-        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
+        await message.channel.send(
+            "Here, I hope you like it!", file=File("image.webp")
+        )
 
     elif (
         message.guild.id in config.WHITELISTED_GUILDS
@@ -149,7 +148,9 @@ async def on_message(message: Message):
     ):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
-        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
+        await message.channel.send(
+            "Here, I hope you like it!", file=File("image.webp")
+        )
 
     elif "hagrid skins" in msg:
         stat(message, "skins")
@@ -159,7 +160,10 @@ async def on_message(message: Message):
 
     elif whitelisted and "hagrid usage stats" in msg:
         characters = 80
-        lines = ["Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:", "```md"]
+        lines = [
+            "Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:",
+            "```md",
+        ]
         for guild in sorted(list(stats.keys())):
             lines.append("# " + guild)
             characters += len(guild)
