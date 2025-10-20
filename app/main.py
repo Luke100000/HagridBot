@@ -2,16 +2,16 @@ import asyncio
 import random
 
 import discord
-from discord import Message, File
+from discord import File, Message
 
 from app import config
 from app.data import HAGRID_BEDROCK
-from app.openai_utils import generate_text
 from app.modules.config import retrieve
 from app.modules.library import library
 from app.modules.paint import paint
 from app.modules.sirben import SIRBEN_VERSES
 from app.modules.smart_hagrid import on_smart_message
+from app.openai_utils import generate_text
 from app.stats import stat, stats
 
 intents = discord.Intents.default()
@@ -28,15 +28,13 @@ async def on_ready():
     print(f"{client.user} has connected to Discord!")
 
 
-
-
 # noinspection SpellCheckingInspection
 @client.event
 async def on_message(message: Message):
     if message.author == client.user:
         return
 
-    whitelisted = message.guild.id in config.WHITELISTED_GUILDS
+    whitelisted = message.guild.id in config.settings.whitelisted_guilds
 
     # More smart and expensive stuff
     if whitelisted and await on_smart_message(message):
@@ -78,13 +76,13 @@ async def on_message(message: Message):
     elif "port" in msg and "1.12" in msg:
         stat(message, "1.12")
         await message.channel.send(
-            f"Ah, blimey! This MCA 1.12.2 port, it's a right headache, I'm tellin' ya! All them technical tweaks and compatibility fuss, it's a right bunch of unnecessary work, ain't it?"
+            "Ah, blimey! This MCA 1.12.2 port, it's a right headache, I'm tellin' ya! All them technical tweaks and compatibility fuss, it's a right bunch of unnecessary work, ain't it?"
         )
 
     elif "league" in msg:
         stat(message, "league")
         await message.channel.send(
-            f"Blimey, take a gander at this fella... We should ban 'im, we should."
+            "Blimey, take a gander at this fella... We should ban 'im, we should."
         )
 
     elif "bedrock intensifies" in msg:
@@ -105,7 +103,7 @@ async def on_message(message: Message):
     elif "hagrid log" in msg:
         stat(message, "log")
         await message.channel.send(
-            f"Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
+            "Oi! Jus' drop the latest.log 'ere. It be in yer Minecraft's save directory in logs. An' if ye be on a server, drop that log too. The crashlog don't always 'ave enough info. If ye wants to make sure ye don't get ignored, make a GitHub issue. An' if ye don't follow the template, I'll break yer kneecap, I will!"
         )
 
     elif len(message.attachments) > 0:
@@ -114,10 +112,9 @@ async def on_message(message: Message):
                 attachment.content_type is not None
                 and attachment.content_type.startswith("text/plain")
             ):
-                if (
-                    "Mod ID: 'architectury', Requested by: 'mca', Expected range: '"
-                    in (await attachment.read()).decode("utf-8")
-                ):
+                if "Mod ID: 'architectury', Requested by: 'mca', Expected range: '" in (
+                    await attachment.read()
+                ).decode("utf-8"):
                     await message.channel.send(
                         "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
                     )
@@ -128,7 +125,7 @@ async def on_message(message: Message):
         )
 
     elif (
-        message.guild.id in config.WHITELISTED_GUILDS
+        message.guild.id in config.settings.whitelisted_guilds
         and "hagrid paint" in msg
         and len(msg) > 15
     ):
@@ -137,25 +134,21 @@ async def on_message(message: Message):
             paint,
             f"{msg.replace('hagrid paint', '').strip()}, oil painting with impasto",
         )
-        await message.channel.send(
-            "Here, I hope you like it!", file=File("image.webp")
-        )
+        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
 
     elif (
-        message.guild.id in config.WHITELISTED_GUILDS
+        message.guild.id in config.settings.whitelisted_guilds
         and "hagrid draw" in msg
         and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
         await asyncio.to_thread(paint, msg.replace("hagrid draw", "").strip())
-        await message.channel.send(
-            "Here, I hope you like it!", file=File("image.webp")
-        )
+        await message.channel.send("Here, I hope you like it!", file=File("image.webp"))
 
     elif "hagrid skins" in msg:
         stat(message, "skins")
         await message.channel.send(
-            f"Oi! Take a gander at this 'ere: https://github.com/Luke100000/minecraft-comes-alive/wiki/Custom-Skins"
+            "Oi! Take a gander at this 'ere: https://github.com/Luke100000/minecraft-comes-alive/wiki/Custom-Skins"
         )
 
     elif whitelisted and "hagrid usage stats" in msg:
@@ -201,8 +194,6 @@ async def on_message(message: Message):
                 max_tokens=150,
             )
         )
-
-    await sync_users(message.guild)
 
 
 if __name__ == "__main__":
