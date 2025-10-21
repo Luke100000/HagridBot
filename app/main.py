@@ -89,9 +89,10 @@ async def on_message(message: Message):
         and len(msg) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
+        await message.channel.typing()
         path = await asyncio.to_thread(
             paint,
-            f"{msg.replace('hagrid paint', '').strip()}"
+            f"{msg.replace('hagrid paint', '').replace('hagrid draw', '').strip()}"
             + (", oil painting with impasto" if "paint" in msg else "")
             + " masterpiece, highly detailed, 8k",
         )

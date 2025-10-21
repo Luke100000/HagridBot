@@ -12,7 +12,7 @@ async def get_last_messages(message: Message, limit: int = 10) -> list:
 
 
 PROMPT = """
-Given this discord conversation as context:
+Given this discord conversation as context, which may be unrelated or outdated:
 {conversation}
 
 And the last message from a user:
