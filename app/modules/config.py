@@ -31,6 +31,7 @@ Short sentence and explanation of config in Hagrids style:
 ```
 
 Or if the setting is simpler, it can be like `configOption` with a short explanation.
+Try to respond compact, only use newlines if really required.
 """.strip()
 
 
@@ -41,5 +42,5 @@ async def retrieve(query):
             query=query,
         ),
         temperature=0.0,
-        max_tokens=256,
+        max_tokens=512,
     )

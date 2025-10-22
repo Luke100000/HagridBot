@@ -14,6 +14,7 @@ load_dotenv()
 client = AsyncOpenAI(
     base_url=os.getenv("LLM_API_URL"),
     api_key=os.environ.get("LLM_API_KEY"),
+    max_retries=10,
 )
 
 
