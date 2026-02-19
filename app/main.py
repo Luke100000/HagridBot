@@ -136,6 +136,20 @@ async def on_message(message: Message):
         await message.channel.typing()
         await message.channel.send(await speak(message))
 
+    elif message.channel.name == "sus":
+        stat(message, "sus")
+        await message.channel.send(
+            f"Oi <@{message.author.id}>, caught yer bot yapperin’ in here, so I gave it a friendly chat with me boots an’ sent it hobblin’ out the door."
+        )
+        if not message.author.top_role.permissions.administrator:
+            await message.author.ban(
+                delete_message_seconds=300,
+                reason="Talking in the sus channel, as per Hagrid's orders.",
+            )
+            await message.author.unban(
+                reason="Debugging the sus channel ban, as per Hagrid's orders."
+            )
+
 
 if __name__ == "__main__":
     client.run(config.TOKEN)
