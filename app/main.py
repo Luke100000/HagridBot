@@ -46,7 +46,20 @@ async def on_message(message: Message):
                 stat(message, f"trigger: {trigger}")
                 return
 
-    if "sirben" in msg:
+    if message.channel.name == "sus":
+        stat(message, "sus")
+        await message.channel.send(
+            f"Oi <@{message.author.id}>, caught yer bot yapperin’ in here, so I gave it a friendly chat with me boots an’ sent it hobblin’ out the door."
+        )
+        if not message.author.top_role.permissions.administrator:
+            await message.author.ban(
+                delete_message_seconds=60,
+                reason="Talking in the sus channel, as per Hagrid's orders.",
+            )
+            await message.author.unban(
+                reason="Debugging the sus channel ban, as per Hagrid's orders."
+            )
+    elif "sirben" in msg:
         stat(message, "sirben")
         verse = random.randrange(len(SIRBEN_VERSES))
         await message.channel.send(
@@ -61,6 +74,7 @@ async def on_message(message: Message):
                 "* `hagrid paint <prompt>` and I'll whip up a painting for ya, in me own style.",
                 "* `hagrid draw <prompt>` if ya fancy, but if ya don't like me style, I'll ask a mate to have a go at it.",
                 "* `hey hagrid <prompt>` if ya got a question. I'll give it me best shot at answerin'.",
+                "* `hagrid config <prompt>` if ya wanna know how to configure MCA. I'll fetch the info for ya.",
             ]
         )
         await message.channel.send(text)
@@ -135,20 +149,6 @@ async def on_message(message: Message):
         stat(message, "hey hagrid")
         await message.channel.typing()
         await message.channel.send(await speak(message))
-
-    elif message.channel.name == "sus":
-        stat(message, "sus")
-        await message.channel.send(
-            f"Oi <@{message.author.id}>, caught yer bot yapperin’ in here, so I gave it a friendly chat with me boots an’ sent it hobblin’ out the door."
-        )
-        if not message.author.top_role.permissions.administrator:
-            await message.author.ban(
-                delete_message_seconds=300,
-                reason="Talking in the sus channel, as per Hagrid's orders.",
-            )
-            await message.author.unban(
-                reason="Debugging the sus channel ban, as per Hagrid's orders."
-            )
 
 
 if __name__ == "__main__":
