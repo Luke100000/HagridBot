@@ -6,6 +6,7 @@ from discord import File, Message
 
 from app import config
 from app.modules.config import retrieve
+from app.modules.crosspost import CrosspostGuard
 from app.modules.paint import paint
 from app.modules.sirben import SIRBEN_VERSES
 from app.modules.talk import speak
@@ -19,6 +20,8 @@ intents.voice_states = True
 
 client = discord.Client(intents=intents)
 
+_CROSSPOST_GUARD = CrosspostGuard()
+
 
 @client.event
 async def on_ready():
@@ -29,16 +32,29 @@ async def on_ready():
 async def on_message(message: Message):
     if message.author == client.user:
         return
+    if message.author.bot:
+        return
+    if message.guild is None:
+        return
+
+    # Normalize the message content
+    attachment_count = len(message.attachments)
+    normalized = " ".join(message.content.lower().replace(",", "").split())
+    if attachment_count > 0:
+        normalized += f" attachments:{attachment_count}"
 
     whitelisted = message.guild.id in config.settings.whitelisted_guilds
 
-    msg = message.content.lower().replace(",", "")
+    # Crossposting
+    if await _CROSSPOST_GUARD.handle(message, normalized, client):
+        return
 
+    # Basic triggers
     for trigger, response in config.settings.triggers.items():
         for variant in trigger.split("|"):
             all_matched = True
             for word in variant.split("&"):
-                if word not in msg:
+                if word not in normalized:
                     all_matched = False
                     break
             if all_matched:
@@ -49,24 +65,23 @@ async def on_message(message: Message):
     if message.channel.name == "sus":
         stat(message, "sus")
         await message.channel.send(
-            f"Oi <@{message.author.id}>, caught yer bot yapperin’ in here, so I gave it a friendly chat with me boots an’ sent it hobblin’ out the door."
+            f"Oi <@{message.author.id}>, caught you yapperin’ in here, so I gave ya a friendly chat with me boots an’ sent ya hobblin’ out the door."
         )
         if not message.author.top_role.permissions.administrator:
             await message.author.ban(
                 delete_message_seconds=60,
                 reason="Talking in the sus channel, as per Hagrid's orders.",
             )
-            await message.author.unban(
-                reason="Debugging the sus channel ban, as per Hagrid's orders."
-            )
-    elif "sirben" in msg:
+            await message.author.unban()
+
+    elif "sirben" in normalized:
         stat(message, "sirben")
         verse = random.randrange(len(SIRBEN_VERSES))
         await message.channel.send(
             f"The Book of the Sirbens, chapter {verse % 30 + 1}, verse {verse % 17 + 1}:\n> {SIRBEN_VERSES[verse]}"
         )
 
-    elif "hagrid help" in msg:
+    elif "hagrid help" in normalized:
         stat(message, "help")
         text = "\n".join(
             [
@@ -79,10 +94,12 @@ async def on_message(message: Message):
         )
         await message.channel.send(text)
 
-    elif "hagrid config" in msg:
+    elif "hagrid config" in normalized:
         stat(message, "config")
         await message.channel.typing()
-        await message.channel.send(await retrieve(msg.replace("config", "").strip()))
+        await message.channel.send(
+            await retrieve(normalized.replace("config", "").strip())
+        )
 
     elif len(message.attachments) > 0:
         for attachment in message.attachments:
@@ -99,20 +116,20 @@ async def on_message(message: Message):
 
     elif (
         message.guild.id in config.settings.whitelisted_guilds
-        and ("hagrid paint" in msg or "hagrid draw" in msg)
-        and len(msg) > 15
+        and ("hagrid paint" in normalized or "hagrid draw" in normalized)
+        and len(normalized) > 15
     ):
         await message.channel.send("Alright, give me a few seconds!")
         await message.channel.typing()
         path = await asyncio.to_thread(
             paint,
-            f"{msg.replace('hagrid paint', '').replace('hagrid draw', '').strip()}"
-            + (", oil painting with impasto" if "paint" in msg else "")
+            f"{normalized.replace('hagrid paint', '').replace('hagrid draw', '').strip()}"
+            + (", oil painting with impasto" if "paint" in normalized else "")
             + " masterpiece, highly detailed, 8k",
         )
         await message.channel.send("Here, I hope you like it!", file=File(path))
 
-    elif whitelisted and "hagrid usage stats" in msg:
+    elif whitelisted and "hagrid usage stats" in normalized:
         characters = 80
         lines = [
             "Thi's 'ere's th' usage stats 'cross all th' guilds I'm on:",
@@ -141,10 +158,10 @@ async def on_message(message: Message):
         await message.channel.send("\n".join(lines))
 
     elif (
-        "hey hagrid" in msg
-        or "hi hagrid" in msg
-        or "hello hagrid" in msg
-        or "hallo hagrid" in msg
+        "hey hagrid" in normalized
+        or "hi hagrid" in normalized
+        or "hello hagrid" in normalized
+        or "hallo hagrid" in normalized
     ):
         stat(message, "hey hagrid")
         await message.channel.typing()
