@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from horde_sdk.ai_horde_api import KNOWN_SAMPLERS
 from horde_sdk.ai_horde_api.ai_horde_clients import AIHordeAPISimpleClient
 from horde_sdk.ai_horde_api.apimodels import (
     ImageGenerateAsyncRequest,
     ImageGenerationInputPayload,
 )
+from horde_sdk.generation_parameters import KNOWN_IMAGE_SAMPLERS
 
 from app.config import get_data_path
 
@@ -23,7 +23,7 @@ def paint(prompt: str) -> Path:
         ImageGenerateAsyncRequest(
             apikey=API_KEY,
             params=ImageGenerationInputPayload(
-                sampler_name=KNOWN_SAMPLERS.k_euler,
+                sampler_name=KNOWN_IMAGE_SAMPLERS.k_euler,
                 width=1024,
                 height=1024,
                 steps=30,
