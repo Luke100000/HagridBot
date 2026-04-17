@@ -143,7 +143,7 @@ class RankModule:
             for i, row in enumerate(rows, start=1):
                 user_id = int(row["user"])
                 member = interaction.guild.get_member(user_id)
-                name = member.mention if member else f"<@{user_id}>"
+                name = member.display_name if member else f"User {user_id}"
                 lines.append(f"{i}. {name} - a grand total of {int(row['xp'])} XP")
 
             await interaction.response.send_message("\n".join(lines))
