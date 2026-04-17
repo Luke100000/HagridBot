@@ -1,4 +1,5 @@
 import math
+import random
 import time
 from typing import Optional
 
@@ -24,9 +25,11 @@ class RankModule:
             error: app_commands.AppCommandError,
         ) -> None:
             if isinstance(error, app_commands.MissingPermissions):
-                msg = "You need administrator permissions for that command."
+                msg = "Hold on there! Ye need administrator permissions ter be meddlin' with that."
             else:
-                msg = "Command failed. Check logs for details."
+                msg = (
+                    "Blimey, summat went wrong with that command. Best check them logs."
+                )
 
             if interaction.response.is_done():
                 await interaction.followup.send(msg, ephemeral=True)
@@ -40,7 +43,8 @@ class RankModule:
         ) -> None:
             if interaction.guild is None:
                 await interaction.response.send_message(
-                    "This command only works in a guild.", ephemeral=True
+                    "This 'ere command only works inside a proper guild, it does.",
+                    ephemeral=True,
                 )
                 return
 
@@ -51,18 +55,33 @@ class RankModule:
             current = self._highest_eligible_row(rows, xp)
             next_row = next((row for row in rows if int(row["xp"]) > xp), None)
 
-            lines = [f"{member.mention} has **{xp} XP**."]
+            rank_messages = [
+                f"Look at that! {member.mention} has cobbled together **{xp} XP**!",
+                f"Blimey, {member.mention}, ye've got yerself **{xp} XP**!",
+                f"Oi! {member.mention} is sittin' on **{xp} XP**!",
+                f"Gallopin' gargoyles! {member.mention} climbed ter **{xp} XP**!",
+                f"Not too shabby, {member.mention}! That's **{xp} XP** in yer pocket!",
+                f"Well I'll be... {member.mention} managed ter earn **{xp} XP**!",
+                f"Right then, {member.mention} has ter their name **{xp} XP**!",
+                f"Crikey, {member.mention}! Ye've scooped up **{xp} XP**!",
+                f"My o' my, {member.mention} is holdin' **{xp} XP**!",
+                f"{member.mention} has gathered up **{xp} XP**! Yer doin' alright!",
+            ]
+            lines = [random.choice(rank_messages)]
+
             if current is not None:
                 role = interaction.guild.get_role(int(current["role"]))
                 if role:
                     lines.append(
-                        f"Current rank: {role.mention} ({int(current['xp'])} XP)"
+                        f"Current rank's {role.mention} ({int(current['xp'])} XP) - not too shabby at all!"
                     )
             if next_row is not None:
                 role = interaction.guild.get_role(int(next_row["role"]))
                 if role:
                     remaining = max(0, int(next_row["xp"]) - xp)
-                    lines.append(f"Next rank: {role.mention} in {remaining} XP")
+                    lines.append(
+                        f"Next step up is {role.mention}, just need another {remaining} XP. Keep at it, ye hear?"
+                    )
 
             await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
@@ -70,18 +89,20 @@ class RankModule:
         async def ranks(interaction: discord.Interaction) -> None:
             if interaction.guild is None:
                 await interaction.response.send_message(
-                    "This command only works in a guild.", ephemeral=True
+                    "This 'ere command only works inside a proper guild, it does.",
+                    ephemeral=True,
                 )
                 return
 
             rows = self._get_rank_rows(interaction.guild.id)
             if not rows:
                 await interaction.response.send_message(
-                    "No ranks configured yet.", ephemeral=True
+                    "Ain't no ranks set up yet, I'm afraid. Not a single one.",
+                    ephemeral=True,
                 )
                 return
 
-            lines = ["Configured ranks:"]
+            lines = ["Here's the ranks we got sorted out fer ye:"]
             for row in rows:
                 role = interaction.guild.get_role(int(row["role"]))
                 if role:
@@ -95,7 +116,8 @@ class RankModule:
         ) -> None:
             if interaction.guild is None:
                 await interaction.response.send_message(
-                    "This command only works in a guild.", ephemeral=True
+                    "This 'ere command only works inside a proper guild, it does.",
+                    ephemeral=True,
                 )
                 return
 
@@ -111,16 +133,18 @@ class RankModule:
             )
             if not rows:
                 await interaction.response.send_message(
-                    "No XP data yet.", ephemeral=True
+                    "Ain't nobody earned any XP yet.", ephemeral=True
                 )
                 return
 
-            lines = [f"Top {len(rows)} XP in {interaction.guild.name}:"]
+            lines = [
+                f"Right then! Here's the top {len(rows)} folks 'round 'ere in {interaction.guild.name}:"
+            ]
             for i, row in enumerate(rows, start=1):
                 user_id = int(row["user"])
                 member = interaction.guild.get_member(user_id)
                 name = member.mention if member else f"<@{user_id}>"
-                lines.append(f"{i}. {name} - {int(row['xp'])} XP")
+                lines.append(f"{i}. {name} - a grand total of {int(row['xp'])} XP")
 
             await interaction.response.send_message("\n".join(lines))
 
@@ -135,7 +159,8 @@ class RankModule:
         ) -> None:
             if interaction.guild is None:
                 await interaction.response.send_message(
-                    "This command only works in a guild.", ephemeral=True
+                    "This 'ere command only works inside a proper guild, it does.",
+                    ephemeral=True,
                 )
                 return
 
@@ -149,7 +174,7 @@ class RankModule:
                 (interaction.guild.id, role.id, int(xp)),
             )
             await interaction.response.send_message(
-                f"Set rank {role.mention} to {int(xp)} XP.",
+                f"Righto, I've set the rank {role.mention} ter need {int(xp)} XP.",
                 ephemeral=True,
             )
 
@@ -161,7 +186,8 @@ class RankModule:
         ) -> None:
             if interaction.guild is None:
                 await interaction.response.send_message(
-                    "This command only works in a guild.", ephemeral=True
+                    "This 'ere command only works inside a proper guild, it does.",
+                    ephemeral=True,
                 )
                 return
 
@@ -170,7 +196,8 @@ class RankModule:
                 (interaction.guild.id, role.id),
             )
             await interaction.response.send_message(
-                f"Removed rank {role.mention}.", ephemeral=True
+                f"Done and dusted. The rank {role.mention} is gone fer good.",
+                ephemeral=True,
             )
 
         @self.tree.command(
@@ -184,7 +211,8 @@ class RankModule:
         ) -> None:
             if interaction.guild is None:
                 await interaction.response.send_message(
-                    "This command only works in a guild.", ephemeral=True
+                    "This 'ere command only works inside a proper guild, it does.",
+                    ephemeral=True,
                 )
                 return
 
@@ -198,7 +226,7 @@ class RankModule:
                 (interaction.guild.id, channel.id),
             )
             await interaction.response.send_message(
-                f"Rank announcements now go to {channel.mention}.",
+                f"Got it! Rank announcements'll be sent straight ter {channel.mention} from now on, they will.",
                 ephemeral=True,
             )
 
@@ -268,13 +296,11 @@ class RankModule:
         hour_bucket += 1.0
 
         gain = int(
-            round(
-                xp_cfg.base_xp_gain
-                + (xp_cfg.minute_activity_weight / (1.0 + minute_bucket))
-                + (xp_cfg.hour_activity_weight / (1.0 + hour_bucket))
-            )
+            xp_cfg.base_xp_gain
+            + (xp_cfg.minute_activity_weight / (1.0 + minute_bucket))
+            + (xp_cfg.hour_activity_weight / (1.0 + hour_bucket))
         )
-        gain = max(xp_cfg.min_xp_gain, min(gain, xp_cfg.max_xp_gain))
+        gain = min(max(0, gain), xp_cfg.max_xp_gain)
         return gain, minute_bucket, hour_bucket
 
     async def handle_message_xp(
@@ -295,6 +321,8 @@ class RankModule:
             float(row["minute_bucket"]),
             float(row["hour_bucket"]),
         )
+
+        # If gain is 0, we simply update the buckets and return, but we still commit them!
         new_xp = old_xp + gain
 
         execute(
@@ -306,12 +334,16 @@ class RankModule:
             (new_xp, minute_bucket, hour_bucket, now, guild_id, user_id),
         )
 
-        await self._sync_member_rank(message.author, message.guild, old_xp, new_xp)
+        if gain > 0:
+            await self._sync_member_rank(
+                message.author, message.guild, message.channel, old_xp, new_xp
+            )
 
     async def _sync_member_rank(
         self,
         member: discord.Member,
         guild: discord.Guild,
+        channel: discord.TextChannel,
         old_xp: int,
         new_xp: int,
     ) -> None:
@@ -350,24 +382,31 @@ class RankModule:
         if old_rank_id == target_role_id or target_role is None:
             return
 
-        dm_text = (
-            f"Oi {member.display_name}, ye reached **{new_xp} XP** and now hold rank "
-            f"{target_role.mention}!"
-        )
-        try:
-            await member.send(dm_text)
-        except discord.Forbidden:
-            pass
-
         channel_row = fetch_one(
             "SELECT rankChannel FROM rank_channel WHERE guild = ?",
             (guild.id,),
         )
-        if not channel_row:
-            return
 
-        channel = guild.get_channel(int(channel_row["rankChannel"]))
-        if channel and isinstance(channel, discord.TextChannel):
-            await channel.send(
-                f"{member.mention} reached {target_role.mention} with **{new_xp} XP**!"
-            )
+        target_channel = channel
+        if channel_row:
+            rc = guild.get_channel(int(channel_row["rankChannel"]))
+            if rc and isinstance(rc, discord.TextChannel):
+                target_channel = rc
+
+        channel_variations = [
+            f"Blimey! {member.mention} just reached the {target_role.mention} rank with a solid **{new_xp} XP**! Let's hear it fer 'em!",
+            f"Oi! Everyone look 'ere! {member.mention} cobbled together **{new_xp} XP** and became a {target_role.mention}!",
+            f"Give a cheer fer {member.mention}! Hit **{new_xp} XP** and claimed the {target_role.mention} rank!",
+            f"Well I'll be! {member.mention} climbed up ter **{new_xp} XP** and stands as a proper {target_role.mention}!",
+            f"Stand back! {member.mention} is comin' through with **{new_xp} XP** and their new {target_role.mention} badge!",
+            f"That's the spirit! {member.mention} earned **{new_xp} XP** and just got made a {target_role.mention}!",
+            f"Got summat ter announce! {member.mention} hauled in **{new_xp} XP** ter reach {target_role.mention}!",
+            f"Merlin's beard! {member.mention} just hit **{new_xp} XP**! Please welcome our newest {target_role.mention}!",
+            f"Right then, let's have a round of applause! {member.mention} snared **{new_xp} XP** and the {target_role.mention} role!",
+            f"Look at 'em go! {member.mention} is now a {target_role.mention} with **{new_xp} XP**. Pass 'em a butterbeer!",
+        ]
+        channel_text = random.choice(channel_variations)
+        try:
+            await target_channel.send(channel_text)
+        except discord.Forbidden:
+            pass

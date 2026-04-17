@@ -22,10 +22,9 @@ class Settings(BaseModel):
     class RankXpConfig(BaseModel):
         minute_bucket_decay_seconds: float = 60.0
         hour_bucket_decay_seconds: float = 3600.0
-        base_xp_gain: float = 1.0
-        minute_activity_weight: float = 8.0
-        hour_activity_weight: float = 120.0
-        min_xp_gain: int = 1
+        base_xp_gain: float = 0.0
+        minute_activity_weight: float = 5.0
+        hour_activity_weight: float = 15.0
         max_xp_gain: int = 100
 
     triggers: dict[str, str] = Field(default_factory=dict)
