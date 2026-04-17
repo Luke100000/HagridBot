@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -19,8 +19,18 @@ def get_data_path(path: str) -> Path:
 
 
 class Settings(BaseModel):
-    triggers: dict[str, str] = {}
-    whitelisted_guilds: list[int] = []
+    class RankXpConfig(BaseModel):
+        minute_bucket_decay_seconds: float = 60.0
+        hour_bucket_decay_seconds: float = 3600.0
+        base_xp_gain: float = 1.0
+        minute_activity_weight: float = 8.0
+        hour_activity_weight: float = 120.0
+        min_xp_gain: int = 1
+        max_xp_gain: int = 100
+
+    triggers: dict[str, str] = Field(default_factory=dict)
+    whitelisted_guilds: list[int] = Field(default_factory=list)
+    rank_xp: RankXpConfig = Field(default_factory=RankXpConfig)
 
 
 settings_path = get_data_path("settings.json")

@@ -1,11 +1,38 @@
-Retire all hagrid chat and config functions, only respond to
-"Hey/Hallo/Hello hagrid"
-And add context (passt messages etc)
-and optionally a file based on presence of keyword (e.g. config to include to config.java)
-TRhen its a special task, e.g. "Generate a response of format ..."
+# HagridBot
 
+HagridBot is a Discord bot with trigger-based moderation/help replies and optional LLM-backed chat responses in a
+Hagrid-like persona.
 
-api_url = "https://mca.conczin.net/v1/user/mca/" server errors
+## Features
 
-remove all index features, they are slow and not really required.
-Only fetch latest messages on demand
+- Rule-based trigger responses from `data/settings.json`
+- Cross-channel anti-crosspost guard
+- LLM chat fallback via `hey hagrid`
+- MCA config Q&A (`hagrid config ...`)
+- AI Horde image generation (`hagrid paint|draw ...`)
+- XP/rank progression with slash commands (`/rank`, `/ranks`, `/rankadd`, `/rankremove`, `/rankchannel`)
+- Usage stats (`/stats`)
+
+## Runtime requirements
+
+Set these in `.env`:
+
+- `DISCORD_TOKEN`
+- `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`
+- `HORDE_API_KEY`
+
+## Run locally
+
+```bash
+uv sync
+python app/main.py
+```
+
+## Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+`./data` is mounted to `/data` in the container so bot state survives restarts.
+
