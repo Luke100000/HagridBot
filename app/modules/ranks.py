@@ -55,7 +55,9 @@ class RankModule:
             if current is not None:
                 role = interaction.guild.get_role(int(current["role"]))
                 if role:
-                    lines.append(f"Current rank: {role.mention} ({int(current['xp'])} XP)")
+                    lines.append(
+                        f"Current rank: {role.mention} ({int(current['xp'])} XP)"
+                    )
             if next_row is not None:
                 role = interaction.guild.get_role(int(next_row["role"]))
                 if role:
@@ -108,7 +110,9 @@ class RankModule:
                 (interaction.guild.id, int(limit)),
             )
             if not rows:
-                await interaction.response.send_message("No XP data yet.", ephemeral=True)
+                await interaction.response.send_message(
+                    "No XP data yet.", ephemeral=True
+                )
                 return
 
             lines = [f"Top {len(rows)} XP in {interaction.guild.name}:"]
@@ -120,7 +124,9 @@ class RankModule:
 
             await interaction.response.send_message("\n".join(lines))
 
-        @self.tree.command(name="rankadd", description="Add or update a rank threshold.")
+        @self.tree.command(
+            name="rankadd", description="Add or update a rank threshold."
+        )
         @app_commands.checks.has_permissions(administrator=True)
         async def rankadd(
             interaction: discord.Interaction,
@@ -253,7 +259,9 @@ class RankModule:
         xp_cfg = config.settings.rank_xp
         dt = max(0.0, now - last_message_at)
 
-        minute_bucket = minute_bucket * math.exp(-dt / xp_cfg.minute_bucket_decay_seconds)
+        minute_bucket = minute_bucket * math.exp(
+            -dt / xp_cfg.minute_bucket_decay_seconds
+        )
         hour_bucket = hour_bucket * math.exp(-dt / xp_cfg.hour_bucket_decay_seconds)
 
         minute_bucket += 1.0
@@ -269,7 +277,9 @@ class RankModule:
         gain = max(xp_cfg.min_xp_gain, min(gain, xp_cfg.max_xp_gain))
         return gain, minute_bucket, hour_bucket
 
-    async def handle_message_xp(self, message: discord.Message, normalized: str) -> None:
+    async def handle_message_xp(
+        self, message: discord.Message, normalized: str
+    ) -> None:
         if message.guild is None or not normalized:
             return
 
@@ -361,5 +371,3 @@ class RankModule:
             await channel.send(
                 f"{member.mention} reached {target_role.mention} with **{new_xp} XP**!"
             )
-
-

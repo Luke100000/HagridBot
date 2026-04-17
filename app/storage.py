@@ -71,4 +71,3 @@ def execute(query: str, params: tuple = ()) -> None:
 def executemany(query: str, params: list[tuple]) -> None:
     with _connect() as conn:
         conn.executemany(query, params)
-

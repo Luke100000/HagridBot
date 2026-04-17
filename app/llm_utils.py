@@ -1,5 +1,4 @@
 import os
-from typing import Optional, Union, List
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -20,12 +19,15 @@ client = AsyncOpenAI(
 
 async def generate_text(
     prompt: str,
-    model: str = os.getenv("LLM_MODEL"),
+    model: str | None = None,
     system_prompt: str = "You are Rubeus Hagrid, the loyal, friendly, and softhearted game assistant with a thick west country accent.",
     temperature: float = 0.7,
     max_tokens: int = 512,
-    stop: Optional[Union[str, list]] = None,
-) -> Union[List[str], str]:
+    stop: str | list | None = None,
+) -> str | list[str]:
+    if model is None:
+        model = os.getenv("LLM_MODEL", "gpt-4o")
+
     messages = [
         ChatCompletionSystemMessageParam(content=system_prompt, role="system"),
         ChatCompletionUserMessageParam(content=prompt, role="user"),

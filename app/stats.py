@@ -51,9 +51,7 @@ def format_stats(guild: str | None = None, top_n: int = 5) -> str:
         guild_rows = grouped[guild_name]
         top = guild_rows[:top_n]
         other = sum(count for _, count in guild_rows[top_n:])
-        compact = ", ".join(
-            f"{name.replace('_', ' ')}: {count}" for name, count in top
-        )
+        compact = ", ".join(f"{name.replace('_', ' ')}: {count}" for name, count in top)
         if other > 0:
             compact = f"{compact}, other: {other}"
         lines.append(f"- {guild_name}: {compact}")
@@ -80,4 +78,3 @@ class StatsModule:
 
 async def setup(tree: app_commands.CommandTree) -> StatsModule:
     return StatsModule(tree)
-

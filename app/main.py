@@ -56,12 +56,7 @@ class HagridClient(discord.Client):
         # Basic triggers
         for trigger, response in config.settings.triggers.items():
             for variant in trigger.split("|"):
-                all_matched = True
-                for word in variant.split("&"):
-                    if word not in normalized:
-                        all_matched = False
-                        break
-                if all_matched:
+                if all(word in normalized for word in variant.split("&")):
                     await message.channel.send(response)
                     stat(message, f"trigger: {trigger}")
                     return
@@ -105,18 +100,20 @@ class HagridClient(discord.Client):
                 await retrieve(normalized.replace("config", "").strip())
             )
 
-        elif len(message.attachments) > 0:
+        elif message.attachments:
             for attachment in message.attachments:
-                if (
-                    attachment.content_type is not None
-                    and attachment.content_type.startswith("text/plain")
+                if attachment.content_type and attachment.content_type.startswith(
+                    "text/plain"
                 ):
-                    if "Mod ID: 'architectury', Requested by: 'mca', Expected range: '" in (
-                        await attachment.read()
-                    ).decode("utf-8"):
+                    content = (await attachment.read()).decode("utf-8")
+                    if (
+                        "Mod ID: 'architectury', Requested by: 'mca', Expected range: '"
+                        in content
+                    ):
                         await message.channel.send(
                             "https://fontmeme.com/permalink/231105/b48ffbb9d6b7bc89c6ded7aa0826a1a4.png"
                         )
+                        break
 
         elif (
             whitelisted
@@ -133,17 +130,13 @@ class HagridClient(discord.Client):
             )
             await message.channel.send("Here, I hope you like it!", file=File(path))
 
-        elif (
-            "hey hagrid" in normalized
-            or "hi hagrid" in normalized
-            or "hello hagrid" in normalized
-            or "hallo hagrid" in normalized
+        elif any(
+            g in normalized
+            for g in ("hey hagrid", "hi hagrid", "hello hagrid", "hallo hagrid")
         ):
             stat(message, "hey hagrid")
             await message.channel.typing()
             await message.channel.send(await speak(message))
-
-
 
 
 if __name__ == "__main__":
