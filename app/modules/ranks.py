@@ -309,6 +309,9 @@ class RankModule:
         if message.guild is None or not normalized:
             return
 
+        if not isinstance(message.author, discord.Member):
+            return
+
         guild_id = message.guild.id
         user_id = message.author.id
         now = time.time()
@@ -356,11 +359,14 @@ class RankModule:
         target_role_id = int(target["role"]) if target else None
 
         old_rank_id = None
-        current_role_ids = {role.id for role in member.roles}
-        for row in rows:
-            role_id = int(row["role"])
-            if role_id in current_role_ids:
-                old_rank_id = role_id
+        if isinstance(member, discord.Member):
+            current_role_ids = {role.id for role in member.roles}
+            for row in rows:
+                role_id = int(row["role"])
+                if role_id in current_role_ids:
+                    old_rank_id = role_id
+        else:
+            return
 
         keep_roles = [role for role in member.roles if role.id not in managed_ids]
         target_role = guild.get_role(target_role_id) if target_role_id else None
@@ -376,8 +382,8 @@ class RankModule:
                 roles=[role for role in desired_roles if role is not None],
                 reason=f"Rank update {old_xp} XP -> {new_xp} XP",
             )
-        except (discord.Forbidden, discord.HTTPException):
-            return
+        except (discord.Forbidden, discord.HTTPException) as e:
+            print(f"Skipping role update for {member} due to error: {e}")
 
         if old_rank_id == target_role_id or target_role is None:
             return
