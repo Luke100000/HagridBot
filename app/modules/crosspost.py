@@ -39,6 +39,7 @@ class CrosspostGuard:
                         delete_message_seconds=60,
                         reason="Spam detected by Hagrid.",
                     )
+                    await message.author.unban()
                 except (discord.Forbidden, discord.HTTPException):
                     pass
                 self._last_message_by_user.pop(key, None)
