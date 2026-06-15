@@ -11,6 +11,7 @@ from app.modules.paint import paint
 from app.modules.ranks import RankModule
 from app.modules.sirben import SIRBEN_VERSES
 from app.modules.talk import speak
+from app.permissions import PermissionModule, has_permission
 from app.stats import StatsModule, stat
 from app.storage import init_storage
 
@@ -21,6 +22,7 @@ class HagridClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
         self._crosspost_guard = CrosspostGuard()
         self._ranks_module = RankModule(self, self.tree)
+        self._permission_module = PermissionModule(self.tree)
         self._stats_module = StatsModule(self.tree)
 
     async def setup_hook(self) -> None:
@@ -44,8 +46,6 @@ class HagridClient(discord.Client):
         normalized = " ".join(message.content.lower().replace(",", "").split())
         if attachment_count > 0:
             normalized += f" attachments:{attachment_count}"
-
-        whitelisted = message.guild.id in config.settings.whitelisted_guilds
 
         # Crossposting
         if await self._crosspost_guard.handle(message, normalized):
@@ -94,6 +94,12 @@ class HagridClient(discord.Client):
             await message.channel.send(text)
 
         elif "hagrid config" in normalized:
+            if not has_permission(message.author.id, message.guild.id, 1):
+                await message.channel.send(
+                    f"Oi <@{message.author.id}>, ye need permission level 1 for that."
+                )
+                return
+
             stat(message, "config")
             await message.channel.typing()
             await message.channel.send(
@@ -115,11 +121,12 @@ class HagridClient(discord.Client):
                         )
                         break
 
-        elif (
-            whitelisted
-            and ("hagrid paint" in normalized or "hagrid draw" in normalized)
-            and len(normalized) > 15
-        ):
+        elif ("hagrid paint" in normalized or "hagrid draw" in normalized) and len(
+            normalized
+        ) > 15:
+            if not has_permission(message.author.id, message.guild.id, 2):
+                return
+
             await message.channel.send("Alright, give me a few seconds!")
             await message.channel.typing()
             path = await asyncio.to_thread(

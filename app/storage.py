@@ -49,6 +49,18 @@ def init_storage() -> None:
                 count      INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (guild, group_name)
             );
+
+            CREATE TABLE IF NOT EXISTS user_permissions
+            (
+                user_id INTEGER PRIMARY KEY,
+                level   INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS guild_permissions
+            (
+                guild_id INTEGER PRIMARY KEY,
+                level    INTEGER NOT NULL
+            );
             """
         )
 

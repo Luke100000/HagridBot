@@ -1,5 +1,6 @@
 from discord import Interaction, Message, app_commands
 
+from app.permissions import has_permission, send_permission_denied
 from app.storage import execute, fetch_all
 
 
@@ -73,6 +74,11 @@ class StatsModule:
             interaction: Interaction,
             guild: str | None = None,
         ) -> None:
+            guild_id = interaction.guild.id if interaction.guild else None
+            if not has_permission(interaction.user.id, guild_id, 2):
+                await send_permission_denied(interaction, 2)
+                return
+
             text = format_stats(guild=guild)
             await interaction.response.send_message(
                 f"```md\n{text}\n```",

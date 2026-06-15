@@ -28,7 +28,6 @@ class Settings(BaseModel):
         max_xp_gain: int = 100
 
     triggers: dict[str, str] = Field(default_factory=dict)
-    whitelisted_guilds: list[int] = Field(default_factory=list)
     rank_xp: RankXpConfig = Field(default_factory=RankXpConfig)
 
 
