@@ -146,7 +146,7 @@ class RankModule:
                 name = member.display_name if member else f"User {user_id}"
                 lines.append(f"{i}. {name} - a grand total of {int(row['xp'])} XP")
 
-            await interaction.response.send_message("\n".join(lines))
+            await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
         @self.tree.command(
             name="rankadd", description="Add or update a rank threshold."

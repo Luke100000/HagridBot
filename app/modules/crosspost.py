@@ -4,50 +4,44 @@ from discord import Message
 
 class CrosspostGuard:
     def __init__(self):
-        # user_id -> (normalized_content, channel_id, message_id)
+        # (guild_id, user_id) -> (normalized_content, consecutive_count)
         self._last_message_by_user = {}
 
-    async def handle(
-        self, message: Message, normalized: str, client: discord.Client
-    ) -> bool:
-        if not normalized:
+    async def handle(self, message: Message, normalized: str) -> bool:
+        if len(normalized) < 8:
             return False
 
-        last = self._last_message_by_user.get(message.author.id)
+        key = (message.guild.id, message.author.id)
+        last = self._last_message_by_user.get(key)
         if last is not None:
-            last_content, last_channel_id, last_message_id = last
-            if normalized == last_content and message.channel.id != last_channel_id:
+            last_content, count = last
+            if normalized == last_content:
+                count += 1
+                self._last_message_by_user[key] = (normalized, count)
+
+                if count == 2:
+                    try:
+                        await message.author.send(
+                            "Oi, Hagrid listens for duplicate messages. Send that same thing again and I'll boot ye out meself."
+                        )
+                    except (discord.Forbidden, discord.HTTPException):
+                        pass
+                    return True
+
                 await message.channel.send(
-                    f"Oi <@{message.author.id}>, quit spamming 'cross channels, I booted it out meself."
+                    f"Oi <@{message.author.id}>, that's enough spam. Out ye go."
                 )
 
-                # Best-effort delete both messages, then kick.
                 try:
-                    await message.delete()
-                except (discord.Forbidden, discord.NotFound):
-                    pass
-
-                try:
-                    last_channel = client.get_channel(last_channel_id)
-                    if last_channel is not None:
-                        last_message = await last_channel.fetch_message(last_message_id)
-                        await last_message.delete()
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
-                    pass
-
-                try:
-                    await message.guild.kick(
+                    await message.guild.ban(
                         message.author,
-                        reason="Crosspost spam detected by Hagrid.",
+                        delete_message_seconds=60,
+                        reason="Spam detected by Hagrid.",
                     )
                 except (discord.Forbidden, discord.HTTPException):
                     pass
-                self._last_message_by_user.pop(message.author.id, None)
+                self._last_message_by_user.pop(key, None)
                 return True
 
-        self._last_message_by_user[message.author.id] = (
-            normalized,
-            message.channel.id,
-            message.id,
-        )
+        self._last_message_by_user[key] = (normalized, 1)
         return False

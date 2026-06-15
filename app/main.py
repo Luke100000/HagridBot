@@ -48,7 +48,7 @@ class HagridClient(discord.Client):
         whitelisted = message.guild.id in config.settings.whitelisted_guilds
 
         # Crossposting
-        if await self._crosspost_guard.handle(message, normalized, self):
+        if await self._crosspost_guard.handle(message, normalized):
             return
 
         await self._ranks_module.handle_message_xp(message, normalized)
