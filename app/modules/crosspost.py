@@ -21,8 +21,9 @@ class CrosspostGuard:
 
                 if count == 2:
                     try:
-                        await message.author.send(
-                            "Oi, Hagrid listens for duplicate messages. Send that same thing again and I'll boot ye out meself."
+                        await message.channel.send(
+                            f"Oi <@{message.author.id}>, Hagrid listens for duplicate messages. Send that same thing again and I'll boot ye out meself.",
+                            delete_after=15,
                         )
                     except (discord.Forbidden, discord.HTTPException):
                         pass
