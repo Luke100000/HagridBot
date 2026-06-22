@@ -9,7 +9,7 @@ Hagrid-like persona.
 - Cross-channel anti-crosspost guard
 - LLM chat fallback via `hey hagrid`
 - MCA config Q&A (`hagrid config ...`)
-- AI Horde image generation (`hagrid paint|draw ...`)
+- Replicate image generation via FLUX.2 klein (`hagrid paint|draw ...`)
 - XP/rank progression with slash commands (`/rank`, `/ranks`, `/rankadd`, `/rankremove`, `/rankchannel`)
 - Usage stats (`/stats`)
 
@@ -19,7 +19,7 @@ Set these in `.env`:
 
 - `DISCORD_TOKEN`
 - `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`
-- `HORDE_API_KEY`
+- `REPLICATE_API_TOKEN`
 
 ## Run locally
 

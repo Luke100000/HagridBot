@@ -9,12 +9,11 @@ dependencies = [
     "asyncio>=4.0.0",
     "cachetools>=6.2.0",
     "discord>=2.3.2",
-    "horde-sdk>=0.17.1",
     "numpy>=2.2.6",
     "openai>=2.2.0",
-    "pillow>=11.3.0",
     "pydantic>=2.11.0",
     "python-dotenv>=1.1.1",
+    "replicate>=1.0.0",
     "requests>=2.32.0",
     "tiktoken>=0.12.0",
 ]

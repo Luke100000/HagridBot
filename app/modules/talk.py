@@ -27,10 +27,11 @@ Respond in a single sentence.
 async def speak(message: Message):
     messages = await get_last_messages(message)
     messages.reverse()
-    messages = [
-        f"{author}: {content.replace('\n', ' ').strip()}"
-        for author, content in messages
-    ]
+    formatted = []
+    for author, content in messages:
+        content = content.replace("\n", " ").strip()
+        formatted.append(f"{author}: {content}")
+    messages = formatted
 
     return await generate_text(
         PROMPT.format(
