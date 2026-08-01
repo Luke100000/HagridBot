@@ -39,3 +39,9 @@ async def speak(message: Message):
             last_message=messages[-1],
         )
     )
+
+
+async def speak_prompt(prompt: str):
+    return await generate_text(
+        PROMPT.format(conversation="", last_message=prompt)
+    )

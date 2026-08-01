@@ -10,10 +10,30 @@ from app.modules.crosspost import CrosspostGuard
 from app.modules.paint import paint
 from app.modules.ranks import RankModule
 from app.modules.sirben import SIRBEN_VERSES
-from app.modules.talk import speak
+from app.modules.talk import speak, speak_prompt
 from app.permissions import PermissionModule, has_permission
 from app.stats import StatsModule, stat
 from app.storage import init_storage
+
+
+async def _generate_image(
+    interaction: discord.Interaction, prompt: str, painted: bool
+) -> None:
+    guild_id = interaction.guild.id if interaction.guild else None
+    if not has_permission(interaction.user.id, guild_id, 2):
+        await interaction.response.send_message(
+            "Oi, ye need permission level 2 for that.", ephemeral=True
+        )
+        return
+
+    await interaction.response.defer(thinking=True)
+    image_prompt = (
+        prompt
+        + (", oil painting with impasto" if painted else "")
+        + " masterpiece, highly detailed, 8k"
+    )
+    path = await asyncio.to_thread(paint, image_prompt)
+    await interaction.followup.send("Here, I hope you like it!", file=File(path))
 
 
 class HagridClient(discord.Client):
@@ -27,10 +47,48 @@ class HagridClient(discord.Client):
         self._register_commands()
 
     def _register_commands(self) -> None:
-        @self.tree.command(name="privacy", description="View HagridBot's privacy policy.")
+        @self.tree.command(name="hey", description="Ask Hagrid a question.")
+        async def hey(interaction: discord.Interaction, prompt: str) -> None:
+            await interaction.response.defer(thinking=True)
+            await interaction.followup.send(await speak_prompt(prompt))
+
+        @self.tree.command(
+            name="config", description="Ask about Minecraft Comes Alive configuration."
+        )
+        async def config_command(interaction: discord.Interaction, prompt: str) -> None:
+            guild_id = interaction.guild.id if interaction.guild else None
+            if not has_permission(interaction.user.id, guild_id, 1):
+                await interaction.response.send_message(
+                    "Oi, ye need permission level 1 for that.", ephemeral=True
+                )
+                return
+
+            await interaction.response.defer(thinking=True)
+            await interaction.followup.send(await retrieve(prompt))
+
+        @self.tree.command(
+            name="paint", description="Generate a Hagrid-style painting."
+        )
+        async def paint_command(interaction: discord.Interaction, prompt: str) -> None:
+            await _generate_image(interaction, prompt, painted=True)
+
+        @self.tree.command(name="draw", description="Generate an image.")
+        async def draw_command(interaction: discord.Interaction, prompt: str) -> None:
+            await _generate_image(interaction, prompt, painted=False)
+
+        @self.tree.command(
+            name="privacy", description="View HagridBot's privacy policy."
+        )
         async def privacy(interaction: discord.Interaction) -> None:
             await interaction.response.send_message(
                 "HagridBot's privacy policy: https://conczin.net/hagrid/privacy-policy.html",
+                ephemeral=True,
+            )
+
+        @self.tree.command(name="tos", description="View HagridBot's terms of service.")
+        async def tos(interaction: discord.Interaction) -> None:
+            await interaction.response.send_message(
+                "HagridBot's terms of service: https://conczin.net/hagrid/terms-of-service.html",
                 ephemeral=True,
             )
 
@@ -156,8 +214,12 @@ class HagridClient(discord.Client):
 
 
 if __name__ == "__main__":
-    intents = discord.Intents.default()
-    intents.message_content = True
-
-    client = HagridClient(intents=intents)
-    client.run(config.TOKEN)
+    try:
+        intents = discord.Intents.default()
+        intents.message_content = True
+        HagridClient(intents=intents).run(config.TOKEN)
+    except discord.PrivilegedIntentsRequired:
+        print(
+            "Message Content intent is unavailable; starting with slash commands only."
+        )
+        HagridClient(intents=discord.Intents.default()).run(config.TOKEN)
