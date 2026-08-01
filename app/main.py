@@ -24,6 +24,15 @@ class HagridClient(discord.Client):
         self._ranks_module = RankModule(self, self.tree)
         self._permission_module = PermissionModule(self.tree)
         self._stats_module = StatsModule(self.tree)
+        self._register_commands()
+
+    def _register_commands(self) -> None:
+        @self.tree.command(name="privacy", description="View HagridBot's privacy policy.")
+        async def privacy(interaction: discord.Interaction) -> None:
+            await interaction.response.send_message(
+                "HagridBot's privacy policy: https://conczin.net/hagrid/privacy-policy.html",
+                ephemeral=True,
+            )
 
     async def setup_hook(self) -> None:
         init_storage()
@@ -149,8 +158,6 @@ class HagridClient(discord.Client):
 if __name__ == "__main__":
     intents = discord.Intents.default()
     intents.message_content = True
-    intents.members = True
-    intents.voice_states = True
 
     client = HagridClient(intents=intents)
     client.run(config.TOKEN)
